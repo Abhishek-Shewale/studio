@@ -32,7 +32,6 @@ export async function provideFeedbackOnResponses(input: ProvideFeedbackOnRespons
 const provideFeedbackOnResponsesPrompt = ai.definePrompt(
   {
     name: 'provideFeedbackOnResponsesPrompt',
-    model: 'googleai/gemini-2.0-flash-exp',
     input: {schema: ProvideFeedbackOnResponsesInputSchema},
     output: {schema: ProvideFeedbackOnResponsesOutputSchema},
   },

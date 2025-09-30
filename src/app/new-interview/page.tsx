@@ -12,8 +12,11 @@ import {
 import { InterviewSession } from '@/app/components/interview-session';
 import { useToast } from '@/hooks/use-toast';
 import { useSpeech } from '@/hooks/use-speech';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
 
 type InterviewState = 'setup' | 'generating' | 'session' | 'finished';
 
@@ -26,6 +29,8 @@ export default function NewInterviewPage() {
   const { toast } = useToast();
   const { hasSpeechSupport } = useSpeech({});
   const [isClient, setIsClient] = useState(false);
+  const router = useRouter();
+
 
   useEffect(() => {
     setIsClient(true);
@@ -71,6 +76,10 @@ export default function NewInterviewPage() {
     setInterviewData(null);
     setInterviewState('setup');
   };
+  
+  const handleGoToDashboard = () => {
+    router.push('/dashboard');
+  }
 
   const renderContent = () => {
     switch (interviewState) {
@@ -85,8 +94,6 @@ export default function NewInterviewPage() {
         );
       case 'session':
         if (interviewData) {
-          // This is a temporary type assertion. In a real app, you'd want to make sure
-          // the experienceLevel is correctly passed or handled.
           const sessionSettings = {
             ...interviewData.settings,
             experienceLevel: interviewData.settings.difficulty,
@@ -99,7 +106,6 @@ export default function NewInterviewPage() {
             />
           );
         }
-        // Fallback
         handleRestart();
         return null;
       case 'finished':
@@ -107,13 +113,17 @@ export default function NewInterviewPage() {
           <Card className="w-full max-w-lg mx-auto text-center p-8 shadow-2xl">
             <CardHeader>
               <CardTitle className="text-3xl font-bold">Interview Complete!</CardTitle>
+              <CardDescription className="pt-2">
+                You did a great job. Practice makes perfect! Your performance has been saved.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mt-4">
-                You did a great job. Practice makes perfect!
-              </p>
-              <Button onClick={handleRestart} className="mt-8">
+            <CardContent className="flex flex-col gap-4">
+              <Button onClick={handleRestart} size="lg">
                 Start New Interview
+              </Button>
+               <Button onClick={handleGoToDashboard} size="lg" variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
               </Button>
             </CardContent>
           </Card>

@@ -12,7 +12,7 @@ import {z} from 'genkit';
 
 const ProvideFeedbackOnResponsesInputSchema = z.object({
   question: z.string().describe('The interview question asked.'),
-  response: z.string().describe('The user\'s spoken response to the question.'),
+  response: z.string().describe("The user's spoken response to the question."),
   role: z.string().describe('The role the user is interviewing for (e.g., SDLC, AI Engineer).'),
   experienceLevel: z.string().describe('The experience level of the user (e.g., Entry, Mid-level, Senior).'),
 });

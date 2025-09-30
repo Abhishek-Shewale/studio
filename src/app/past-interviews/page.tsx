@@ -1,13 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
   Table,
   TableBody,
   TableCell,
@@ -16,10 +9,42 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ArrowUpDown } from 'lucide-react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { getPastInterviews, InterviewRecord } from '@/lib/interview-service';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 
 export default function PastInterviewsPage() {
-  const interviews = []; // Empty for now
+  const [interviews, setInterviews] = useState<InterviewRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    async function fetchInterviews() {
+      try {
+        const pastInterviews = await getPastInterviews(user.uid);
+        // Ensure date is a JS Date object for formatting
+        const formattedInterviews = pastInterviews.map(iv => ({
+          ...iv,
+          date: (iv.date as any).toDate ? (iv.date as any).toDate() : iv.date,
+        }));
+        setInterviews(formattedInterviews);
+      } catch (error) {
+        console.error("Failed to fetch interviews", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchInterviews();
+  }, [user, authLoading, router]);
 
   const renderTable = () => (
     <Table>
@@ -48,11 +73,31 @@ export default function PastInterviewsPage() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableRow>
+        {loading ? (
+          <TableRow>
+            <TableCell colSpan={5} className="h-24 text-center">
+              Loading...
+            </TableCell>
+          </TableRow>
+        ) : interviews.length === 0 ? (
+          <TableRow>
             <TableCell colSpan={5} className="h-24 text-center">
               No interviews found.
             </TableCell>
           </TableRow>
+        ) : (
+          interviews.map((interview) => (
+            <TableRow key={interview.id}>
+              <TableCell>{interview.role}</TableCell>
+              <TableCell>{new Date(interview.date).toLocaleDateString()}</TableCell>
+              <TableCell>{interview.duration} min</TableCell>
+              <TableCell>{interview.score}%</TableCell>
+              <TableCell>
+                <Button variant="outline" size="sm">View Details</Button>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
       </TableBody>
     </Table>
   );
@@ -69,17 +114,9 @@ export default function PastInterviewsPage() {
           </p>
         </div>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Interview History</CardTitle>
-           <CardDescription>
-            All your recorded mock interviews will be listed below.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-           {renderTable()}
-        </CardContent>
-      </Card>
+      <div className="border rounded-lg">
+        {renderTable()}
+      </div>
     </div>
   );
 }

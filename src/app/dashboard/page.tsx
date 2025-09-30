@@ -6,9 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import {
-  ArrowUp,
   BarChart,
   Clock,
   Briefcase,
@@ -16,16 +14,22 @@ import {
   BarChart2,
   List,
 } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  }
+
+  if (!user && !loading) {
+    router.push('/login');
+    return null;
+  }
+
   const stats = [
     {
       title: 'Total Interviews',
@@ -59,7 +63,7 @@ export default function DashboardPage() {
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
       </div>
       <p className="text-muted-foreground">
-        Welcome back! Here's your interview performance at a glance.
+        Welcome back, {user?.displayName || 'user'}! Here's your interview performance at a glance.
       </p>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

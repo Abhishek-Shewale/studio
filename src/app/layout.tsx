@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { SidebarLayout } from './components/sidebar-layout';
 
 export const metadata: Metadata = {
   title: 'ProPrep AI',
@@ -28,7 +27,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <SidebarLayout>{children}</SidebarLayout>
+        {children}
         <Toaster />
       </body>
     </html>

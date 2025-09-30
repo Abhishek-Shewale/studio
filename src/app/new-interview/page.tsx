@@ -12,10 +12,13 @@ import {
 import { InterviewSession } from '@/app/components/interview-session';
 import { useToast } from '@/hooks/use-toast';
 import { useSpeech } from '@/hooks/use-speech';
+import { useAuth } from '@/hooks/use-auth';
+import { saveInterview } from '@/lib/interview-service';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import * as React from 'react';
 
 
 type InterviewState = 'setup' | 'generating' | 'session' | 'finished';
@@ -30,16 +33,27 @@ export default function NewInterviewPage() {
   const { hasSpeechSupport } = useSpeech({});
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
+  const { user, loading } = useAuth();
+  const startTimeRef = React.useRef<Date | null>(null);
 
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+  if (loading) {
+    return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
+  }
+  
+  if (!user && !loading) {
+    router.push('/login');
+    return null;
+  }
+
   const handleStartInterview = async (data: InterviewSetupData) => {
     setInterviewState('generating');
+    startTimeRef.current = new Date();
     try {
-      // Split topics and question bank into arrays
       const topics = data.topics ? data.topics.split(',').map(t => t.trim()).filter(t => t) : [];
       const questionBank = data.questionBank ? data.questionBank.split('\n').map(q => q.trim()).filter(q => q) : [];
       
@@ -68,7 +82,39 @@ export default function NewInterviewPage() {
     }
   };
 
-  const handleFinishInterview = () => {
+  const handleFinishInterview = async (sessionData: any) => {
+    if (!user || !interviewData || !startTimeRef.current) return;
+    
+    const endTime = new Date();
+    const duration = Math.round((endTime.getTime() - startTimeRef.current.getTime()) / 60000); // in minutes
+
+    try {
+      await saveInterview({
+        userId: user.uid,
+        role: interviewData.settings.role,
+        difficulty: interviewData.settings.difficulty,
+        date: new Date(),
+        duration,
+        score: Math.floor(Math.random() * 31) + 70, // Placeholder score
+        questions: sessionData.map((s:any) => ({
+          question: s.question,
+          response: s.response,
+          feedback: s.feedback,
+        })),
+      });
+       toast({
+        title: 'Interview Saved',
+        description: 'Your interview session has been saved successfully.',
+      });
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'There was a problem saving your interview.',
+      });
+    }
+
+
     setInterviewState('finished');
   };
 
@@ -94,13 +140,9 @@ export default function NewInterviewPage() {
         );
       case 'session':
         if (interviewData) {
-          const sessionSettings = {
-            ...interviewData.settings,
-            experienceLevel: interviewData.settings.difficulty,
-          };
           return (
             <InterviewSession
-              settings={sessionSettings}
+              settings={interviewData.settings}
               questions={interviewData.questions}
               onFinish={handleFinishInterview}
             />

@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useEffect, useMemo, useRef} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import type {InterviewSetupData} from './interview-setup';
 import {provideFeedbackOnResponses} from '@/ai/flows/provide-feedback-on-responses';
 import {useSpeech} from '@/hooks/use-speech';
@@ -19,16 +19,15 @@ import {
   Send,
   Sparkles,
   Volume2,
-  X,
 } from 'lucide-react';
-import {Avatar, AvatarImage, AvatarFallback} from '@/components/ui/avatar';
+import {Avatar, AvatarFallback} from '@/components/ui/avatar';
 import {Textarea} from '@/components/ui/textarea';
 import {ScrollArea} from '@/components/ui/scroll-area';
 
 interface InterviewSessionProps {
   settings: InterviewSetupData;
   questions: string[];
-  onFinish: () => void;
+  onFinish: (sessionData: any[]) => void;
 }
 
 type SessionStatus =
@@ -44,6 +43,12 @@ type Message = {
   text: string;
 };
 
+type SessionRecord = {
+  question: string;
+  response: string;
+  feedback: string;
+}
+
 export function InterviewSession({
   settings,
   questions,
@@ -52,9 +57,9 @@ export function InterviewSession({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [status, setStatus] = useState<SessionStatus>('IDLE');
   const [feedback, setFeedback] = useState('');
-  const [currentError, setCurrentError] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [userAnswer, setUserAnswer] = useState('');
+  const [sessionHistory, setSessionHistory] = useState<SessionRecord[]>([]);
 
   const {speak, startListening, stopListening, cancelSpeaking, isListening} =
     useSpeech({
@@ -82,20 +87,26 @@ export function InterviewSession({
         question: currentQuestion,
         response: transcript,
         role: settings.role,
-        experienceLevel: settings.experienceLevel,
+        experienceLevel: settings.difficulty,
       });
+      
+      const newFeedback = result?.feedback || 'No feedback was generated.';
+      setFeedback(newFeedback);
+      setSessionHistory(prev => [...prev, {
+        question: currentQuestion,
+        response: transcript,
+        feedback: newFeedback,
+      }]);
 
-      if (result && result.feedback) {
-        setFeedback(result.feedback);
-        setCurrentError('');
-      } else {
-        throw new Error('No feedback was generated.');
-      }
     } catch (error: any) {
       console.error('Feedback error:', error);
-      setFeedback(
-        `Sorry, there was an error getting feedback: ${error.message}`
-      );
+      const errorMessage = `Sorry, there was an error getting feedback: ${error.message}`;
+      setFeedback(errorMessage);
+       setSessionHistory(prev => [...prev, {
+        question: currentQuestion,
+        response: transcript,
+        feedback: errorMessage,
+      }]);
     } finally {
       setStatus('IDLE'); // Ready for next action
     }
@@ -105,7 +116,7 @@ export function InterviewSession({
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      speak('That was the last question. The interview is now complete. Great job!', onFinish);
+      speak('That was the last question. The interview is now complete. Great job!', () => onFinish(sessionHistory));
     }
   };
   
@@ -124,11 +135,6 @@ export function InterviewSession({
     }
   }, [status, currentQuestion, speak]);
 
-  const handleStop = () => {
-    cancelSpeaking();
-    stopListening();
-    onFinish();
-  };
 
   const handleListen = () => {
     if (isListening) {
@@ -155,6 +161,14 @@ export function InterviewSession({
       handleSubmit(userAnswer);
     }
   };
+
+  const handleEndInterview = () => {
+    cancelSpeaking();
+    stopListening();
+    onFinish(sessionHistory);
+  };
+  
+  const isLastQuestion = currentQuestionIndex >= questions.length - 1;
 
   return (
     <div className="grid md:grid-cols-2 gap-8 w-full max-w-7xl mx-auto animate-fade-in">
@@ -252,8 +266,8 @@ export function InterviewSession({
           </CardContent>
         </Card>
         <div className="flex gap-4">
-          <Button onClick={nextQuestion} disabled={status === 'PROCESSING' || isListening || currentQuestionIndex >= questions.length - 1}>Next Question</Button>
-          <Button variant="destructive" onClick={onFinish}>End Interview</Button>
+          <Button onClick={nextQuestion} disabled={status === 'PROCESSING' || isListening || isLastQuestion}>Next Question</Button>
+          <Button variant="destructive" onClick={handleEndInterview}>End Interview</Button>
         </div>
       </div>
     </div>

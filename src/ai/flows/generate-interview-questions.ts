@@ -12,9 +12,10 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateInterviewQuestionsInputSchema = z.object({
-  role: z.string().describe('The role for which interview questions should be generated (e.g., SDLC, AI Engineer).'),
-  experienceLevel: z.string().describe('The experience level of the candidate (e.g., Entry-level, Mid-level, Senior-level).'),
-  numberOfQuestions: z.number().int().min(1).max(20).describe('The number of interview questions to generate (between 1 and 20).'),
+  role: z.string().describe('The job role the user is applying for.'),
+  difficulty: z.string().describe('The difficulty level of the questions.'),
+  topics: z.array(z.string()).optional().describe('Optional list of specific topics to focus on.'),
+  questionBank: z.array(z.string()).optional().describe('Optional list of custom questions provided by the user.'),
 });
 export type GenerateInterviewQuestionsInput = z.infer<typeof GenerateInterviewQuestionsInputSchema>;
 
@@ -32,17 +33,23 @@ export async function generateInterviewQuestions(
 const generateInterviewQuestionsPrompt = ai.definePrompt(
   {
     name: 'generateInterviewQuestionsPrompt',
-    model: 'googleai/gemini-2.0-flash-exp',
     input: {schema: GenerateInterviewQuestionsInputSchema},
     output: {schema: GenerateInterviewQuestionsOutputSchema},
   },
-  `You are an expert interview question generator. Given the role, experience level, and number of questions, generate a unique list of interview questions tailored to the candidate for each session. Do not repeat questions across sessions for the same role and experience level.
+  `You are an expert interview question generator. Your task is to generate a list of 5 interview questions based on the provided criteria.
 
-Role: {{role}}
-Experience Level: {{experienceLevel}}
-Number of Questions: {{numberOfQuestions}}
+Job Role: {{role}}
+Difficulty: {{difficulty}}
 
-Generate a fresh set of questions that are relevant, challenging, and appropriate for the specified experience level.`
+{{#if topics}}
+Focus on the following topics:
+{{#each topics}}
+- {{this}}
+{{/each}}
+{{/if}}
+
+Please generate 5 insightful and relevant questions for this interview scenario.
+`
 );
 
 const generateInterviewQuestionsFlow = ai.defineFlow(
@@ -52,6 +59,11 @@ const generateInterviewQuestionsFlow = ai.defineFlow(
     outputSchema: GenerateInterviewQuestionsOutputSchema,
   },
   async input => {
+    // If a question bank is provided, use those questions directly.
+    if (input.questionBank && input.questionBank.length > 0) {
+      return { questions: input.questionBank };
+    }
+
     const {output} = await generateInterviewQuestionsPrompt(input);
     return output!;
   }

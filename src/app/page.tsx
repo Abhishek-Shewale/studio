@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   generateInterviewQuestions,
   type GenerateInterviewQuestionsOutput,
@@ -26,6 +26,11 @@ export default function Home() {
   } | null>(null);
   const { toast } = useToast();
   const { hasSpeechSupport } = useSpeech({});
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleStartInterview = async (data: InterviewSetupData) => {
     setInterviewState('generating');
@@ -66,7 +71,7 @@ export default function Home() {
           <InterviewSetup
             onStartInterview={handleStartInterview}
             isGenerating={interviewState === 'generating'}
-            hasSpeechSupport={hasSpeechSupport}
+            hasSpeechSupport={isClient ? hasSpeechSupport : true}
           />
         );
       case 'session':

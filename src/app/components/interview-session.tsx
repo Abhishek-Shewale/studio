@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import type { InterviewSetupData } from './interview-setup';
 import { provideFeedbackOnResponses } from '@/ai/flows/provide-feedback-on-responses';
 import { useSpeech } from '@/hooks/use-speech';

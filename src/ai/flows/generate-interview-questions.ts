@@ -31,7 +31,6 @@ export async function generateInterviewQuestions(
 
 const generateInterviewQuestionsPrompt = ai.definePrompt({
   name: 'generateInterviewQuestionsPrompt',
-  model: 'googleai/gemini-2.0-flash',
   input: {schema: GenerateInterviewQuestionsInputSchema},
   output: {schema: GenerateInterviewQuestionsOutputSchema},
   prompt: `You are an expert interview question generator. Given the role, experience level, and number of questions, generate a unique list of interview questions tailored to the candidate for each session. Do not repeat questions across sessions for the same role and experience level.

@@ -8,6 +8,7 @@ import {
   query,
   where,
   Timestamp,
+  orderBy,
 } from 'firebase/firestore';
 
 export interface InterviewRecord {
@@ -18,6 +19,7 @@ export interface InterviewRecord {
   date: Timestamp | Date;
   duration: number; // in minutes
   score: number; // as a percentage
+  summary?: string;
   questions: {
     question: string;
     response: string;
@@ -25,11 +27,11 @@ export interface InterviewRecord {
   }[];
 }
 
-export async function saveInterview(interview: InterviewRecord) {
+export async function saveInterview(interview: Omit<InterviewRecord, 'id'>) {
   try {
     const docRef = await addDoc(collection(db, 'interviewSessions'), {
       ...interview,
-      date: Timestamp.fromDate(new Date()),
+      date: Timestamp.fromDate(interview.date instanceof Date ? interview.date : new Date()),
     });
     return docRef.id;
   } catch (error) {
@@ -44,7 +46,8 @@ export async function getPastInterviews(
   try {
     const q = query(
       collection(db, 'interviewSessions'),
-      where('userId', '==', userId)
+      where('userId', '==', userId),
+      orderBy('date', 'desc')
     );
     const querySnapshot = await getDocs(q);
     const interviews: InterviewRecord[] = [];

@@ -5,6 +5,7 @@ import {
   generateInterviewQuestions,
   type GenerateInterviewQuestionsOutput,
 } from '@/ai/flows/generate-interview-questions';
+import { scoreInterview } from '@/ai/flows/score-interview';
 import {
   InterviewSetup,
   type InterviewSetupData,
@@ -16,12 +17,17 @@ import { useAuth } from '@/hooks/use-auth';
 import { saveInterview } from '@/lib/interview-service';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+type InterviewState = 'setup' | 'generating' | 'session' | 'scoring' | 'finished';
 
-type InterviewState = 'setup' | 'generating' | 'session' | 'finished';
+type SessionRecord = {
+  question: string;
+  response: string;
+  feedback: string;
+}
 
 export default function NewInterviewPage() {
   const [interviewState, setInterviewState] = useState<InterviewState>('setup');
@@ -82,20 +88,29 @@ export default function NewInterviewPage() {
     }
   };
 
-  const handleFinishInterview = async (sessionData: any) => {
+  const handleFinishInterview = async (sessionData: SessionRecord[]) => {
     if (!user || !interviewData || !startTimeRef.current) return;
     
+    setInterviewState('scoring');
     const endTime = new Date();
     const duration = Math.round((endTime.getTime() - startTimeRef.current.getTime()) / 60000); // in minutes
 
     try {
+      // Get AI-powered score and summary
+      const { score, summary } = await scoreInterview({
+        role: interviewData.settings.role,
+        difficulty: interviewData.settings.difficulty,
+        interview: sessionData,
+      });
+
       await saveInterview({
         userId: user.uid,
         role: interviewData.settings.role,
         difficulty: interviewData.settings.difficulty,
         date: new Date(),
         duration,
-        score: Math.floor(Math.random() * 31) + 70, // Placeholder score
+        score: score,
+        summary: summary,
         questions: sessionData.map((s:any) => ({
           question: s.question,
           response: s.response,
@@ -150,6 +165,20 @@ export default function NewInterviewPage() {
         }
         handleRestart();
         return null;
+       case 'scoring':
+        return (
+           <Card className="w-full max-w-lg mx-auto text-center p-8 shadow-2xl">
+            <CardHeader>
+              <CardTitle className="text-3xl font-bold">Analyzing your performance...</CardTitle>
+              <CardDescription className="pt-2">
+                Our AI is calculating your score and generating a summary. Please wait a moment.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center gap-4">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </CardContent>
+          </Card>
+        )
       case 'finished':
         return (
           <Card className="w-full max-w-lg mx-auto text-center p-8 shadow-2xl">

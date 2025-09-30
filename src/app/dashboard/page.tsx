@@ -35,11 +35,12 @@ export default function DashboardPage() {
     }
 
     async function fetchInterviews() {
+      if (!user) return;
       try {
         const pastInterviews = await getPastInterviews(user.uid);
         const formattedInterviews = pastInterviews.map((iv) => ({
           ...iv,
-          date: (iv.date as any).toDate ? (iv.date as any).toDate() : iv.date,
+          date: (iv.date as any).toDate ? (iv.date as any).toDate() : new Date(iv.date),
         }));
         setInterviews(formattedInterviews);
       } catch (error) {

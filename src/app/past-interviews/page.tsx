@@ -28,12 +28,13 @@ export default function PastInterviewsPage() {
     }
 
     async function fetchInterviews() {
+      if (!user) return;
       try {
         const pastInterviews = await getPastInterviews(user.uid);
-        // Ensure date is a JS Date object for formatting
         const formattedInterviews = pastInterviews.map(iv => ({
           ...iv,
-          date: (iv.date as any).toDate ? (iv.date as any).toDate() : iv.date,
+          // Firestore Timestamps need to be converted to JS Date objects.
+          date: (iv.date as any).toDate ? (iv.date as any).toDate() : new Date(iv.date),
         }));
         setInterviews(formattedInterviews);
       } catch (error) {

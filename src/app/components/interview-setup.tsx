@@ -27,10 +27,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Code, BrainCircuit, Sparkles, AlertTriangle } from 'lucide-react';
+import { Code, BrainCircuit, Sparkles, AlertTriangle, ShieldCheck, Cloudy, Database } from 'lucide-react';
 
 const formSchema = z.object({
-  role: z.enum(['SDLC Engineer', 'AI Engineer'], {
+  role: z.enum([
+    'SDLC Engineer',
+    'AI Engineer',
+    'Data Scientist',
+    'Cyber Security Engineer',
+    'Cloud Engineer',
+  ], {
     required_error: 'Please select a role.',
   }),
   experienceLevel: z.enum(['Entry-level', 'Mid-level', 'Senior-level'], {
@@ -113,6 +119,24 @@ export function InterviewSetup({
                         <div className="flex items-center gap-2">
                           <BrainCircuit className="h-4 w-4" />
                           <span>AI Engineer</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Data Scientist">
+                        <div className="flex items-center gap-2">
+                          <Database className="h-4 w-4" />
+                          <span>Data Scientist</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Cyber Security Engineer">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="h-4 w-4" />
+                          <span>Cyber Security Engineer</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Cloud Engineer">
+                        <div className="flex items-center gap-2">
+                          <Cloudy className="h-4 w-4" />
+                          <span>Cloud Engineer</span>
                         </div>
                       </SelectItem>
                     </SelectContent>

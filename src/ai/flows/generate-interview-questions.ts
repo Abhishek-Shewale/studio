@@ -33,13 +33,13 @@ const generateInterviewQuestionsPrompt = ai.definePrompt({
   name: 'generateInterviewQuestionsPrompt',
   input: {schema: GenerateInterviewQuestionsInputSchema},
   output: {schema: GenerateInterviewQuestionsOutputSchema},
-  prompt: `You are an expert interview question generator. Given the role, experience level, and number of questions, generate a list of interview questions tailored to the candidate.
+  prompt: `You are an expert interview question generator. Given the role, experience level, and number of questions, generate a unique list of interview questions tailored to the candidate for each session. Do not repeat questions across sessions for the same role and experience level.
 
 Role: {{{role}}}
 Experience Level: {{{experienceLevel}}}
 Number of Questions: {{{numberOfQuestions}}}
 
-Questions:
+Generate a fresh set of questions:
 `,
 });
 

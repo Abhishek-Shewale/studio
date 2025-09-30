@@ -20,7 +20,7 @@ const ProvideFeedbackOnResponsesInputSchema = z.object({
 export type ProvideFeedbackOnResponsesInput = z.infer<typeof ProvideFeedbackOnResponsesInputSchema>;
 
 const ProvideFeedbackOnResponsesOutputSchema = z.object({
-  feedback: z.string().describe('Feedback on the technical accuracy, clarity, and completeness of the response.'),
+  feedback: z.string().describe('Brief, constructive feedback on the technical accuracy, clarity, and completeness of the response, addressing the user directly as "you".'),
 });
 
 export type ProvideFeedbackOnResponsesOutput = z.infer<typeof ProvideFeedbackOnResponsesOutputSchema>;
@@ -33,18 +33,16 @@ const provideFeedbackOnResponsesPrompt = ai.definePrompt({
   name: 'provideFeedbackOnResponsesPrompt',
   input: {schema: ProvideFeedbackOnResponsesInputSchema},
   output: {schema: ProvideFeedbackOnResponsesOutputSchema},
-  prompt: `You are an expert interview feedback provider.
+  prompt: `You are an expert interview coach. Analyze the response for the given question, role, and experience level.
 
-You will analyze the candidate's response to a question and provide feedback on its technical accuracy, clarity, and completeness.
-
-Consider the role and experience level of the candidate when providing feedback.
+Provide brief, constructive feedback on its technical accuracy, clarity, and completeness. Address the user directly as "you".
 
 Question: {{{question}}}
-Response: {{{response}}}
+Your Response: {{{response}}}
 Role: {{{role}}}
 Experience Level: {{{experienceLevel}}}
 
-Provide detailed feedback:
+Your concise feedback:
 `,
 });
 

@@ -5,7 +5,7 @@ import type { InterviewSetupData } from './interview-setup';
 import { provideFeedbackOnResponses } from '@/ai/flows/provide-feedback-on-responses';
 import { useSpeech } from '@/hooks/use-speech';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bot, Loader2, Mic, Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 

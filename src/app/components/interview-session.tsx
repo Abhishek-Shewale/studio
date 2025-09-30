@@ -32,12 +32,13 @@ export function InterviewSession({
   const [feedback, setFeedback] = useState('');
   const [lastTranscript, setLastTranscript] = useState('');
   const [currentError, setCurrentError] = useState('');
-  // We'll use a ref to store the latest transcript from interim results
   const latestTranscript = useRef('');
+  const processingRef = useRef(false);
 
   const handleTranscriptResult = (transcript: string, isFinal: boolean) => {
     latestTranscript.current = transcript;
-    if (isFinal && status === 'LISTENING') {
+    if (isFinal && status === 'LISTENING' && !processingRef.current) {
+      processingRef.current = true;
       stopListeningAndProcess();
     }
   };
@@ -49,46 +50,85 @@ export function InterviewSession({
     cancelSpeaking,
   } = useSpeech({ onListenResult: handleTranscriptResult });
 
-  // This function will be called either by the final result or manual stop
   const stopListeningAndProcess = () => {
     if (status !== 'LISTENING') return;
     
     stopListening();
     
-    // Use the latest transcript we've stored
-    if (latestTranscript.current) {
-      setLastTranscript(latestTranscript.current);
+    const transcript = latestTranscript.current.trim();
+    
+    console.log('=== STOP LISTENING ===');
+    console.log('Raw transcript:', latestTranscript.current);
+    console.log('Trimmed transcript:', transcript);
+    console.log('Transcript length:', transcript.length);
+    
+    if (transcript && transcript.length > 0) {
+      setLastTranscript(transcript);
       setStatus('PROCESSING');
     } else {
-      // If there's no transcript, maybe just go to the next question
-      // Or show a message. For now, we'll just go back to listening.
-      setStatus('LISTENING');
+      console.warn('No transcript captured, restarting listening');
+      processingRef.current = false;
+      // Don't show error immediately, just restart
+      latestTranscript.current = '';
+      setTimeout(() => {
+        startListening();
+      }, 500);
     }
   };
-
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   const getFeedback = async (transcript: string) => {
+    if (!transcript || transcript.trim().length === 0) {
+      setCurrentError('No response detected. Please try speaking again.');
+      setStatus('GIVING_FEEDBACK');
+      return;
+    }
+
     try {
+      console.log('=== FEEDBACK REQUEST START ===');
+      console.log('Question:', currentQuestion);
+      console.log('Transcript:', transcript);
+      console.log('Role:', settings.role);
+      console.log('Experience:', settings.experienceLevel);
+      
       const result = await provideFeedbackOnResponses({
         question: currentQuestion,
         response: transcript,
         role: settings.role,
         experienceLevel: settings.experienceLevel,
       });
-      setFeedback(result.feedback);
+      
+      console.log('=== FEEDBACK RESULT ===');
+      console.log('Result:', result);
+      
+      if (result && result.feedback) {
+        setFeedback(result.feedback);
+        setCurrentError('');
+        console.log('Feedback set successfully');
+      } else {
+        console.error('No feedback in result:', result);
+        setCurrentError('Unable to generate feedback at this time.');
+      }
       setStatus('GIVING_FEEDBACK');
-    } catch (error) {
-      console.error('Error getting feedback:', error);
-      setCurrentError('Sorry, I had trouble processing your response.');
-      setStatus('GIVING_FEEDBACK'); // Still go to feedback state to announce error
+    } catch (error: any) {
+      console.error('=== FEEDBACK ERROR ===');
+      console.error('Error type:', error?.constructor?.name);
+      console.error('Error message:', error?.message);
+      console.error('Error stack:', error?.stack);
+      console.error('Full error:', error);
+      
+      // More specific error message
+      const errorMessage = error?.message || 'Unknown error occurred';
+      setCurrentError(`Error: ${errorMessage}. Let's move on to the next question.`);
+      setStatus('GIVING_FEEDBACK');
+    } finally {
+      processingRef.current = false;
     }
   };
 
   const nextStep = () => {
-    // After feedback is given, move to next question or finish
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
@@ -101,46 +141,55 @@ export function InterviewSession({
   };
 
   useEffect(() => {
-    // State machine management
     switch (status) {
       case 'IDLE':
-        // On first question, ask. On subsequent, this is hit after state reset.
         if (currentQuestion) {
           setStatus('ASKING');
         }
         break;
       case 'ASKING':
-        speak(currentQuestion, () => setStatus('LISTENING'));
+        speak(currentQuestion, () => {
+          latestTranscript.current = '';
+          processingRef.current = false;
+          setStatus('LISTENING');
+        });
         break;
       case 'LISTENING':
-        latestTranscript.current = '';
-        startListening();
+        if (!processingRef.current) {
+          latestTranscript.current = '';
+          startListening();
+        }
         break;
       case 'PROCESSING':
-        getFeedback(lastTranscript);
+        if (lastTranscript) {
+          getFeedback(lastTranscript);
+        }
         break;
       case 'GIVING_FEEDBACK':
-        speak(currentError || `Here's some feedback. ${feedback}`, nextStep);
+        const feedbackMessage = currentError || `Here's some feedback: ${feedback}`;
+        speak(feedbackMessage, () => {
+          setFeedback('');
+          setCurrentError('');
+          nextStep();
+        });
         break;
     }
   }, [status]);
   
   useEffect(() => {
-    // Trigger state change for next question
     if (currentQuestionIndex > 0) {
       setFeedback('');
       setLastTranscript('');
       setCurrentError('');
+      latestTranscript.current = '';
+      processingRef.current = false;
       setStatus('ASKING');
     }
   }, [currentQuestionIndex]);
 
-
   useEffect(() => {
-    // Component mount: Start the process
     setStatus('ASKING');
     
-    // Cleanup on unmount
     return () => {
       cancelSpeaking();
       stopListening();
@@ -153,12 +202,21 @@ export function InterviewSession({
     onFinish();
   };
 
+  const handleManualStop = () => {
+    if (status === 'LISTENING') {
+      stopListeningAndProcess();
+    }
+  };
+
   const StatusDisplay = useMemo(() => {
     switch (status) {
       case 'ASKING':
         return { icon: <Bot className="h-5 w-5 animate-pulse" />, text: "I'm asking a question..." };
       case 'LISTENING':
-        return { icon: <Mic className="h-5 w-5 animate-pulse text-red-500" />, text: "Your turn, I'm listening..." };
+        return { 
+          icon: <Mic className="h-5 w-5 animate-pulse text-red-500" />, 
+          text: latestTranscript.current ? "Keep going, I'm listening..." : "Your turn, I'm listening..." 
+        };
       case 'PROCESSING':
         return { icon: <Loader2 className="h-5 w-5 animate-spin" />, text: 'Analyzing your response...' };
       case 'GIVING_FEEDBACK':
@@ -166,7 +224,7 @@ export function InterviewSession({
       default:
         return { icon: <Loader2 className="h-5 w-5 animate-spin" />, text: 'Preparing...' };
     }
-  }, [status]);
+  }, [status, latestTranscript.current]);
 
   return (
     <Card className="w-full max-w-3xl mx-auto shadow-2xl flex flex-col min-h-[75vh] animate-fade-in">
@@ -185,22 +243,36 @@ export function InterviewSession({
         <p className="text-2xl md:text-3xl font-semibold">{currentQuestion}</p>
         
         {status === 'LISTENING' && (
-          <Button onClick={stopListeningAndProcess} variant="destructive" size="lg">
-            <Square className="mr-2 h-5 w-5" />
-            Stop Listening
-          </Button>
+          <div className="flex flex-col items-center gap-4">
+            <Button onClick={handleManualStop} variant="destructive" size="lg">
+              <Square className="mr-2 h-5 w-5" />
+              Stop & Submit Answer
+            </Button>
+            {latestTranscript.current && (
+              <div className="text-sm text-muted-foreground italic max-w-md">
+                "{latestTranscript.current}"
+              </div>
+            )}
+          </div>
         )}
 
-        {lastTranscript && (
+        {lastTranscript && status !== 'LISTENING' && (
           <div className="mt-4 p-4 bg-secondary rounded-lg w-full text-left max-h-48 overflow-y-auto">
             <h3 className="font-bold mb-2">Your Answer:</h3>
             <p className="text-muted-foreground italic">"{lastTranscript}"</p>
           </div>
         )}
+        
         {feedback && (
           <div className="mt-2 p-4 bg-accent/10 border border-accent/20 rounded-lg w-full text-left max-h-48 overflow-y-auto">
             <h3 className="font-bold mb-2 text-accent">Feedback:</h3>
             <p className="text-foreground">{feedback}</p>
+          </div>
+        )}
+        
+        {currentError && status !== 'GIVING_FEEDBACK' && (
+          <div className="mt-2 p-4 bg-destructive/10 border border-destructive/20 rounded-lg w-full text-left">
+            <p className="text-destructive">{currentError}</p>
           </div>
         )}
       </CardContent>

@@ -51,33 +51,52 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
+      console.log('=== SPEECH RECOGNITION RESULT ===');
+      console.log('Event results length:', event.results.length);
+      console.log('Result index:', event.resultIndex);
+      
       let interimTranscript = '';
+      
       for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscript.current += event.results[i][0].transcript;
+        const result = event.results[i];
+        const transcriptPart = result[0].transcript;
+        
+        console.log(`Result ${i} - isFinal:`, result.isFinal, 'transcript:', transcriptPart);
+        
+        if (result.isFinal) {
+          finalTranscript.current += transcriptPart + ' ';
         } else {
-          interimTranscript += event.results[i][0].transcript;
+          interimTranscript += transcriptPart;
         }
       }
       
-      const transcript = finalTranscript.current + interimTranscript;
-      const isFinal = event.results[event.results.length - 1].isFinal;
-
-      onListenResultRef.current?.(transcript, isFinal);
+      const fullTranscript = finalTranscript.current + interimTranscript;
+      const lastResult = event.results[event.results.length - 1];
       
-      if(isFinal) {
-        finalTranscript.current = '';
-      }
+      console.log('Final transcript so far:', finalTranscript.current);
+      console.log('Interim transcript:', interimTranscript);
+      console.log('Full transcript:', fullTranscript);
+      console.log('Last result is final:', lastResult.isFinal);
 
+      onListenResultRef.current?.(fullTranscript.trim(), lastResult.isFinal);
     };
 
     recognition.onstart = () => {
+      console.log('=== SPEECH RECOGNITION STARTED ===');
       finalTranscript.current = '';
       setIsListening(true);
     };
-    recognition.onend = () => setIsListening(false);
+    
+    recognition.onend = () => {
+      console.log('=== SPEECH RECOGNITION ENDED ===');
+      console.log('Final transcript on end:', finalTranscript.current);
+      setIsListening(false);
+    };
+    
     recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
+      console.error('=== SPEECH RECOGNITION ERROR ===');
+      console.error('Error:', event.error);
+      console.error('Message:', event.message);
       setIsListening(false);
     };
 
@@ -87,10 +106,12 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
       try {
+        console.log('=== STARTING LISTENING ===');
+        finalTranscript.current = '';
         recognitionRef.current.start();
       } catch (e) {
         console.error('Could not start recognition', e);
-        setIsListening(false); // Ensure state is correct on failure
+        setIsListening(false);
       }
     }
   }, [isListening]);
@@ -98,9 +119,10 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
   const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) {
       try {
+        console.log('=== STOPPING LISTENING ===');
+        console.log('Final transcript before stop:', finalTranscript.current);
         recognitionRef.current.stop();
-      } catch (e)
-      {
+      } catch (e) {
         console.error('Could not stop recognition', e);
       }
     }
@@ -109,6 +131,9 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
   const speak = useCallback(
     (text: string, onEnd?: () => void) => {
       if (!hasSpeechSupport || isSpeaking) return;
+
+      console.log('=== SPEAKING ===');
+      console.log('Text:', text);
 
       const utterance = new SpeechSynthesisUtterance(text);
       if (indianVoiceRef.current) {
@@ -120,6 +145,7 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
 
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => {
+        console.log('=== SPEAKING ENDED ===');
         setIsSpeaking(false);
         onEnd?.();
       };
@@ -135,6 +161,7 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
 
   const cancelSpeaking = useCallback(() => {
     if (hasSpeechSupport) {
+      console.log('=== CANCELING SPEAKING ===');
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
     }

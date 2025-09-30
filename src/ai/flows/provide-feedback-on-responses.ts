@@ -29,22 +29,30 @@ export async function provideFeedbackOnResponses(input: ProvideFeedbackOnRespons
   return provideFeedbackOnResponsesFlow(input);
 }
 
-const provideFeedbackOnResponsesPrompt = ai.definePrompt({
-  name: 'provideFeedbackOnResponsesPrompt',
-  input: {schema: ProvideFeedbackOnResponsesInputSchema},
-  output: {schema: ProvideFeedbackOnResponsesOutputSchema},
-  prompt: `You are an expert interview coach. Analyze the response for the given question, role, and experience level.
+const provideFeedbackOnResponsesPrompt = ai.definePrompt(
+  {
+    name: 'provideFeedbackOnResponsesPrompt',
+    model: 'googleai/gemini-2.0-flash-exp',
+    input: {schema: ProvideFeedbackOnResponsesInputSchema},
+    output: {schema: ProvideFeedbackOnResponsesOutputSchema},
+  },
+  `You are an expert interview coach. Analyze the response for the given question, role, and experience level.
 
 Provide brief, constructive feedback on its technical accuracy, clarity, and completeness. Address the user directly as "you".
 
-Question: {{{question}}}
-Your Response: {{{response}}}
-Role: {{{role}}}
-Experience Level: {{{experienceLevel}}}
+Question: {{question}}
+Your Response: {{response}}
+Role: {{role}}
+Experience Level: {{experienceLevel}}
 
-Your concise feedback:
-`,
-});
+Provide concise, actionable feedback that helps the candidate improve. Focus on:
+1. Technical accuracy and depth
+2. Communication clarity
+3. Completeness of the answer
+4. Areas for improvement
+
+Keep feedback encouraging but honest, limited to 2-3 sentences.`
+);
 
 const provideFeedbackOnResponsesFlow = ai.defineFlow(
   {

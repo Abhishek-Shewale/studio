@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+import { SidebarLayout } from './components/sidebar-layout';
 
 export const metadata: Metadata = {
-  title: 'VoiceAssess AI',
+  title: 'ProPrep AI',
   description: 'AI-powered mock interviews with voice feedback.',
 };
 
@@ -16,14 +17,18 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
       <body className="font-body antialiased">
-        {children}
+        <SidebarLayout>{children}</SidebarLayout>
         <Toaster />
       </body>
     </html>

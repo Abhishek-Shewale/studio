@@ -22,8 +22,8 @@ import {
   X,
 } from 'lucide-react';
 import {Avatar, AvatarImage, AvatarFallback} from '@/components/ui/avatar';
-import {Textarea} from '../ui/textarea';
-import {ScrollArea} from '../ui/scroll-area';
+import {Textarea} from '@/components/ui/textarea';
+import {ScrollArea} from '@/components/ui/scroll-area';
 
 interface InterviewSessionProps {
   settings: InterviewSetupData;

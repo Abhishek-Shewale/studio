@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 type UseSpeechProps = {
-  onListenResult?: (text: string) => void;
+  onListenResult?: (text: string, isFinal: boolean) => void;
 };
 
 export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
@@ -12,6 +12,7 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const indianVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const onListenResultRef = useRef(onListenResult);
+  const finalTranscript = useRef('');
 
   // Keep the callback ref up to date
   useEffect(() => {
@@ -45,16 +46,35 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
     speechSynthesis.onvoiceschanged = loadVoices;
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      onListenResultRef.current?.(transcript);
+      let interimTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript.current += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+      
+      const transcript = finalTranscript.current + interimTranscript;
+      const isFinal = event.results[event.results.length - 1].isFinal;
+
+      onListenResultRef.current?.(transcript, isFinal);
+      
+      if(isFinal) {
+        finalTranscript.current = '';
+      }
+
     };
 
-    recognition.onstart = () => setIsListening(true);
+    recognition.onstart = () => {
+      finalTranscript.current = '';
+      setIsListening(true);
+    };
     recognition.onend = () => setIsListening(false);
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);

@@ -6,7 +6,7 @@ import { provideFeedbackOnResponses } from '@/ai/flows/provide-feedback-on-respo
 import { useSpeech } from '@/hooks/use-speech';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, Loader2, Mic, Sparkles } from 'lucide-react';
+import { Bot, Loader2, Mic, Sparkles, Square } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 interface InterviewSessionProps {
@@ -32,12 +32,13 @@ export function InterviewSession({
   const [feedback, setFeedback] = useState('');
   const [lastTranscript, setLastTranscript] = useState('');
   const [currentError, setCurrentError] = useState('');
+  // We'll use a ref to store the latest transcript from interim results
+  const latestTranscript = useRef('');
 
-  const handleTranscriptResult = (transcript: string) => {
-    if (status === 'LISTENING') {
-      stopListening();
-      setLastTranscript(transcript);
-      setStatus('PROCESSING');
+  const handleTranscriptResult = (transcript: string, isFinal: boolean) => {
+    latestTranscript.current = transcript;
+    if (isFinal && status === 'LISTENING') {
+      stopListeningAndProcess();
     }
   };
 
@@ -47,6 +48,24 @@ export function InterviewSession({
     stopListening,
     cancelSpeaking,
   } = useSpeech({ onListenResult: handleTranscriptResult });
+
+  // This function will be called either by the final result or manual stop
+  const stopListeningAndProcess = () => {
+    if (status !== 'LISTENING') return;
+    
+    stopListening();
+    
+    // Use the latest transcript we've stored
+    if (latestTranscript.current) {
+      setLastTranscript(latestTranscript.current);
+      setStatus('PROCESSING');
+    } else {
+      // If there's no transcript, maybe just go to the next question
+      // Or show a message. For now, we'll just go back to listening.
+      setStatus('LISTENING');
+    }
+  };
+
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
@@ -94,6 +113,7 @@ export function InterviewSession({
         speak(currentQuestion, () => setStatus('LISTENING'));
         break;
       case 'LISTENING':
+        latestTranscript.current = '';
         startListening();
         break;
       case 'PROCESSING':
@@ -164,6 +184,13 @@ export function InterviewSession({
       <CardContent className="flex-grow flex flex-col justify-center items-center text-center p-6 md:p-8 gap-8">
         <p className="text-2xl md:text-3xl font-semibold">{currentQuestion}</p>
         
+        {status === 'LISTENING' && (
+          <Button onClick={stopListeningAndProcess} variant="destructive" size="lg">
+            <Square className="mr-2 h-5 w-5" />
+            Stop Listening
+          </Button>
+        )}
+
         {lastTranscript && (
           <div className="mt-4 p-4 bg-secondary rounded-lg w-full text-left max-h-48 overflow-y-auto">
             <h3 className="font-bold mb-2">Your Answer:</h3>

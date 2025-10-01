@@ -265,30 +265,32 @@ export function InterviewSession({
       </div>
 
       {/* Right Column: Feedback */}
-      <div className="flex flex-col gap-4">
-        <Card className="flex-grow">
+      <div className="flex flex-col">
+        <Card className="h-[526px]">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="text-primary" /> Real-time Feedback
             </CardTitle>
             <CardDescription>AI analysis of your latest response.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="h-full overflow-y-auto">
             {status === 'PROCESSING' ? (
-              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <div className="flex items-center justify-center gap-2 text-muted-foreground h-full">
                 <Loader2 className="animate-spin h-5 w-5" />
                 <span>Analyzing...</span>
               </div>
             ) : feedback ? (
-              <p>{feedback}</p>
+              <p className="leading-relaxed">{feedback}</p>
             ) : (
-              <p className="text-muted-foreground">
-                Your feedback will appear here after you respond.
-              </p>
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground text-center">
+                  Your feedback will appear here after you respond.
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>
-        <div className="flex gap-4">
+        <div className="flex mt-4 gap-4">
           <Button onClick={nextQuestion} disabled={status === 'PROCESSING' || isListening || isLastQuestion}>Next Question</Button>
           <Button variant="destructive" onClick={handleEndInterview}>End Interview</Button>
         </div>

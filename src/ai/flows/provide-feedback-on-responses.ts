@@ -28,18 +28,28 @@ export async function provideFeedbackOnResponses(input: ProvideFeedbackOnRespons
 
     const prompt = `You are an expert interview coach. Analyze the response for the given question, role, and experience level.
 
-Provide brief, constructive feedback on its technical accuracy, clarity, and completeness. Address the user directly as "you".
+Provide brief, constructive feedback tailored to the type of question asked. Address the user directly as "you".
 
 Question: ${input.question}
 Your Response: ${input.response}
 Role: ${input.role}
 Experience Level: ${input.experienceLevel}
 
-Provide concise, actionable feedback that helps the candidate improve. Focus on:
-1. Technical accuracy and depth
-2. Communication clarity
-3. Completeness of the answer
-4. Areas for improvement
+For TECHNICAL questions, focus on:
+- Technical accuracy and depth
+- Problem-solving approach
+- Code quality and best practices
+
+For BEHAVIORAL/OPEN-ENDED questions (like "tell me about yourself", "walk me through your experience", etc.), focus on:
+- Structure and completeness of the answer
+- Professional presentation and confidence
+- Relevance to the role and company
+- Communication clarity and storytelling
+
+For ALL questions, consider:
+- Communication clarity
+- Completeness of the answer
+- Areas for improvement
 
 Keep feedback encouraging but honest, limited to 2-3 sentences.`;
 

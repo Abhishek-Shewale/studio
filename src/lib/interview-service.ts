@@ -9,6 +9,8 @@ import {
   where,
   Timestamp,
   orderBy,
+  deleteDoc,
+  doc,
 } from 'firebase/firestore';
 
 export interface InterviewRecord {
@@ -96,5 +98,23 @@ export async function getPastInterviews(
     }
     
     throw new Error('Could not fetch past interviews. Please try again.');
+  }
+}
+
+export async function deleteInterview(interviewId: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'interviewSessions', interviewId));
+  } catch (error) {
+    console.error('Error deleting interview:', error);
+    
+    if (error instanceof Error) {
+      if (error.message.includes('permission-denied')) {
+        throw new Error('You do not have permission to delete this interview.');
+      } else if (error.message.includes('not-found')) {
+        throw new Error('Interview not found.');
+      }
+    }
+    
+    throw new Error('Could not delete the interview. Please try again.');
   }
 }

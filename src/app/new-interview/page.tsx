@@ -18,10 +18,18 @@ import { saveInterview } from '@/lib/interview-service';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, Sparkles } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-type InterviewState = 'setup' | 'generating' | 'session' | 'scoring' | 'finished';
+type InterviewState = 'setup' | 'generating' | 'session' | 'scoring' | 'finished' | 'save-confirmation';
 
 type SessionRecord = {
   question: string;
@@ -35,6 +43,7 @@ export default function NewInterviewPage() {
     settings: InterviewSetupData;
     questions: string[];
   } | null>(null);
+  const [pendingSessionData, setPendingSessionData] = useState<SessionRecord[] | null>(null);
   const { toast } = useToast();
   const { hasSpeechSupport } = useSpeech({});
   const [isClient, setIsClient] = useState(false);
@@ -88,8 +97,13 @@ export default function NewInterviewPage() {
     }
   };
 
-  const handleFinishInterview = async (sessionData: SessionRecord[]) => {
-    if (!user || !interviewData || !startTimeRef.current) return;
+  const handleFinishInterview = (sessionData: SessionRecord[]) => {
+    setPendingSessionData(sessionData);
+    setInterviewState('save-confirmation');
+  };
+
+  const handleSaveInterview = async () => {
+    if (!user || !interviewData || !startTimeRef.current || !pendingSessionData) return;
     
     setInterviewState('scoring');
     const endTime = new Date();
@@ -100,7 +114,7 @@ export default function NewInterviewPage() {
       const { score, summary } = await scoreInterview({
         role: interviewData.settings.role,
         difficulty: interviewData.settings.difficulty,
-        interview: sessionData,
+        interview: pendingSessionData,
       });
 
       await saveInterview({
@@ -111,7 +125,7 @@ export default function NewInterviewPage() {
         duration,
         score: score,
         summary: summary,
-        questions: sessionData.map((s:any) => ({
+        questions: pendingSessionData.map((s:any) => ({
           question: s.question,
           response: s.response,
           feedback: s.feedback,
@@ -129,7 +143,12 @@ export default function NewInterviewPage() {
       });
     }
 
+    setPendingSessionData(null);
+    setInterviewState('finished');
+  };
 
+  const handleSkipSave = () => {
+    setPendingSessionData(null);
     setInterviewState('finished');
   };
 
@@ -179,13 +198,34 @@ export default function NewInterviewPage() {
             </CardContent>
           </Card>
         )
+      case 'save-confirmation':
+        return (
+          <Dialog open={true} onOpenChange={() => {}}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Save Interview?</DialogTitle>
+                <DialogDescription>
+                  Would you like to save this interview session to your history? You can review it later and track your progress.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="flex gap-2">
+                <Button variant="outline" onClick={handleSkipSave}>
+                  Skip
+                </Button>
+                <Button onClick={handleSaveInterview}>
+                  Save Interview
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
       case 'finished':
         return (
           <Card className="w-full max-w-lg mx-auto text-center p-8 shadow-2xl">
             <CardHeader>
               <CardTitle className="text-3xl font-bold">Interview Complete!</CardTitle>
               <CardDescription className="pt-2">
-                You did a great job. Practice makes perfect! Your performance has been saved.
+                You did a great job. Practice makes perfect! {pendingSessionData ? 'Your performance has been saved.' : 'Your session was not saved.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">

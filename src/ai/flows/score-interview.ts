@@ -54,10 +54,41 @@ ${interviewTranscript}
 
 **Your Task:**
 Based on the full context of the interview, provide a final, holistic evaluation.
-1. **Score:** Generate an overall score from 0 to 100. This score should reflect the user's technical knowledge, communication skills, and problem-solving abilities demonstrated across all answers, relative to the job role and difficulty.
-2. **Summary:** Write a concise (3-4 sentences) summary. Start with an encouraging tone, highlight one or two key strengths, and point out the most important area for improvement.
 
-Address the user directly as "you." Be fair, constructive, and focus on the big picture.
+**SCORING CRITERIA (Be VERY Strict and Realistic):**
+
+**IMPORTANT: This interview has 10 total questions (5 introductory + 5 technical). Score based on completion and accuracy.**
+
+- **90-100**: Exceptional - Answered 8+ questions correctly with excellent detail and accuracy
+- **80-89**: Strong - Answered 7+ questions correctly with good detail and mostly accurate
+- **70-79**: Good - Answered 6+ questions correctly with adequate detail
+- **60-69**: Adequate - Answered 5+ questions correctly with basic understanding
+- **50-59**: Below average - Answered 4+ questions but with significant gaps or errors
+- **40-49**: Poor - Answered 3+ questions but mostly wrong or incomplete
+- **30-39**: Very poor - Answered 2+ questions but mostly wrong
+- **20-29**: Extremely poor - Answered 1-2 questions and they were wrong
+- **10-19**: Terrible - Answered 1 question and it was completely wrong
+- **0-9**: No meaningful response - No attempt or completely irrelevant answers
+
+**CRITICAL SCORING RULES:**
+1. **Completion matters**: If user only answered 1 out of 10 questions, MAX score should be 5%
+2. **Accuracy matters**: Wrong answers get very low scores (0-10%)
+3. **Incomplete answers**: Get low scores (5-15%) only if partially correct
+4. **No meaningful response**: Gets 0-5% regardless of question count
+5. **High scores (80+)**: Only for answering 7+ questions correctly with good detail
+6. **Be brutally honest**: Don't inflate scores - this is for learning and improvement
+
+**SPECIFIC EXAMPLES:**
+- Answer "hi" to introduction question → 2-3% (not a real answer)
+- Answer "I don't know" → 1-2% (no attempt)
+- Answer partially correct but incomplete → 5-10%
+- Answer completely wrong → 0-5%
+- Answer correctly but very brief → 8-15%
+
+1. **Score:** Generate an overall score from 0 to 100 based on the strict criteria above.
+2. **Summary:** Write a concise (3-4 sentences) summary. Be honest about performance - if it was poor, say so constructively. If it was good, highlight strengths.
+
+Address the user directly as "you." Be honest, constructive, and realistic.
 
 Please respond in the following JSON format:
 {
@@ -85,11 +116,11 @@ Please respond in the following JSON format:
 
     // Fallback: extract score and summary from text
     const scoreMatch = text.match(/(\d+)/);
-    const score = scoreMatch ? Math.max(0, Math.min(100, parseInt(scoreMatch[1]))) : 75;
+    const score = scoreMatch ? Math.max(0, Math.min(100, parseInt(scoreMatch[1]))) : 5; // Default to 5 for very poor performance
     
     return {
       score,
-      summary: text.replace(/\d+/g, '').trim() || 'Good performance overall. Keep practicing to improve your interview skills.'
+      summary: text.replace(/\d+/g, '').trim() || 'Your performance was very poor. You need to provide complete, meaningful answers to interview questions. Simply saying "hi" or giving one-word responses is not acceptable in a professional interview.'
     };
   } catch (error) {
     console.error('Error scoring interview:', error);

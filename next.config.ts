@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  env: {
+    GEMINI_API_KEY: 'AIzaSyA4FzhXgwrJdwwfRtulhi7jhbAmwcTEGck',
+    GOOGLE_API_KEY: 'AIzaSyA4FzhXgwrJdwwfRtulhi7jhbAmwcTEGck',
+  },
   images: {
     remotePatterns: [
       {

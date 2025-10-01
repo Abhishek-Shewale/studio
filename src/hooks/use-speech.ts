@@ -2,6 +2,27 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
+// Extend Window interface to include speech recognition types
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
+// Type definitions for speech recognition
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: ((event: any) => void) | null;
+  onstart: (() => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: any) => void) | null;
+}
+
 type UseSpeechProps = {
   onListenResult?: (text: string, isFinal: boolean) => void;
 };
@@ -36,7 +57,7 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
       const indianVoice =
         voices.find((voice) => voice.lang.includes('en-IN')) ||
         voices.find((voice) => voice.name.includes('Indian')) ||
-        voices.find((voice) => voice.lang.startsWith('en-')); // Fallback to any English voice
+        voices.find((voice) => voice.lang.startsWith('en-US')); // Fallback to any English voice
       if (indianVoice) {
         indianVoiceRef.current = indianVoice;
       }
@@ -50,7 +71,7 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: any) => {
       console.log('=== SPEECH RECOGNITION RESULT ===');
       console.log('Event results length:', event.results.length);
       console.log('Result index:', event.resultIndex);
@@ -93,7 +114,7 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
       setIsListening(false);
     };
     
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: any) => {
       console.error('=== SPEECH RECOGNITION ERROR ===');
       console.error('Error:', event.error);
       console.error('Message:', event.message);

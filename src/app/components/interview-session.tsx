@@ -30,6 +30,15 @@ interface InterviewSessionProps {
   onFinish: (sessionData: any[]) => void;
 }
 
+// Introductory questions that will be asked at the start of every interview
+const INTRODUCTORY_QUESTIONS = [
+  "Please introduce yourself and tell us a bit about your background.",
+  "Tell us about a recent project or assignment you worked on.",
+  "How do you usually approach learning a new technology or tool?",
+  "What motivates you in your career, and where do you see yourself in the next few years?",
+  "What do you enjoy most about working in this field?"
+];
+
 type SessionStatus =
   | 'IDLE'
   | 'ASKING'
@@ -60,8 +69,11 @@ export function InterviewSession({
   const [messages, setMessages] = useState<Message[]>([]);
   const [userAnswer, setUserAnswer] = useState('');
   const [sessionHistory, setSessionHistory] = useState<SessionRecord[]>([]);
+  
+  // Combine introductory questions with technical questions
+  const allQuestions = [...INTRODUCTORY_QUESTIONS, ...questions];
 
-  const {speak, startListening, stopListening, cancelSpeaking, isListening} =
+  const {speak, startListening, stopListening, cancelSpeaking, isListening, isSpeaking} =
     useSpeech({
       onListenResult: (transcript, isFinal) => {
         setUserAnswer(transcript);
@@ -72,7 +84,7 @@ export function InterviewSession({
       },
     });
 
-  const currentQuestion = questions[currentQuestionIndex];
+  const currentQuestion = allQuestions[currentQuestionIndex];
 
   const getFeedback = async (transcript: string) => {
     if (!transcript || transcript.trim().length === 0) {
@@ -113,7 +125,7 @@ export function InterviewSession({
   };
 
   const nextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex < allQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
       speak('That was the last question. The interview is now complete. Great job!', () => onFinish(sessionHistory));
@@ -131,9 +143,15 @@ export function InterviewSession({
   
   useEffect(() => {
     if (status === 'ASKING') {
-      speak(currentQuestion, () => setStatus('IDLE'));
+      speak(currentQuestion, () => {
+        setStatus('IDLE');
+        // Automatically start listening after AI finishes asking the question
+        setUserAnswer('');
+        startListening();
+        setStatus('LISTENING');
+      });
     }
-  }, [status, currentQuestion, speak]);
+  }, [status, currentQuestion, speak, startListening]);
 
 
   const handleListen = () => {
@@ -168,7 +186,7 @@ export function InterviewSession({
     onFinish(sessionHistory);
   };
   
-  const isLastQuestion = currentQuestionIndex >= questions.length - 1;
+  const isLastQuestion = currentQuestionIndex >= allQuestions.length - 1;
 
   return (
     <div className="grid md:grid-cols-2 gap-8 w-full max-w-7xl mx-auto animate-fade-in">
@@ -194,13 +212,18 @@ export function InterviewSession({
                   </Avatar>
                 )}
                 <div
-                  className={`rounded-lg p-3 max-w-sm ${
+                  className={`rounded-lg p-3 ${
                     message.sender === 'ai'
-                      ? 'bg-secondary'
-                      : 'bg-primary text-primary-foreground'
+                      ? 'bg-secondary max-w-2xl'
+                      : 'bg-primary text-primary-foreground max-w-sm'
                   }`}
                 >
-                  <p>{message.text}</p>
+                  <div className="flex items-center gap-2">
+                    <p>{message.text}</p>
+                    {message.sender === 'ai' && isSpeaking && (
+                      <Volume2 className="h-4 w-4 animate-pulse text-primary" />
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

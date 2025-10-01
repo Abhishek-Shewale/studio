@@ -7,42 +7,33 @@
  * - ProvideFeedbackOnResponsesOutput - The return type for the provideFeedbackOnResponses function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-const ProvideFeedbackOnResponsesInputSchema = z.object({
-  question: z.string().describe('The interview question asked.'),
-  response: z.string().describe("The user's spoken response to the question."),
-  role: z.string().describe('The role the user is interviewing for (e.g., SDLC, AI Engineer).'),
-  experienceLevel: z.string().describe('The experience level of the user (e.g., Entry, Mid-level, Senior).'),
-});
-
-export type ProvideFeedbackOnResponsesInput = z.infer<typeof ProvideFeedbackOnResponsesInputSchema>;
-
-const ProvideFeedbackOnResponsesOutputSchema = z.object({
-  feedback: z.string().describe('Brief, constructive feedback on the technical accuracy, clarity, and completeness of the response, addressing the user directly as "you".'),
-});
-
-export type ProvideFeedbackOnResponsesOutput = z.infer<typeof ProvideFeedbackOnResponsesOutputSchema>;
-
-export async function provideFeedbackOnResponses(input: ProvideFeedbackOnResponsesInput): Promise<ProvideFeedbackOnResponsesOutput> {
-  return provideFeedbackOnResponsesFlow(input);
+export interface ProvideFeedbackOnResponsesInput {
+  question: string;
+  response: string;
+  role: string;
+  experienceLevel: string;
 }
 
-const provideFeedbackOnResponsesPrompt = ai.definePrompt(
-  {
-    name: 'provideFeedbackOnResponsesPrompt',
-    input: {schema: ProvideFeedbackOnResponsesInputSchema},
-    output: {schema: ProvideFeedbackOnResponsesOutputSchema},
-  },
-  `You are an expert interview coach. Analyze the response for the given question, role, and experience level.
+export interface ProvideFeedbackOnResponsesOutput {
+  feedback: string;
+}
+
+export async function provideFeedbackOnResponses(input: ProvideFeedbackOnResponsesInput): Promise<ProvideFeedbackOnResponsesOutput> {
+  try {
+    // Use direct Google GenAI API
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '');
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+    const prompt = `You are an expert interview coach. Analyze the response for the given question, role, and experience level.
 
 Provide brief, constructive feedback on its technical accuracy, clarity, and completeness. Address the user directly as "you".
 
-Question: {{question}}
-Your Response: {{response}}
-Role: {{role}}
-Experience Level: {{experienceLevel}}
+Question: ${input.question}
+Your Response: ${input.response}
+Role: ${input.role}
+Experience Level: ${input.experienceLevel}
 
 Provide concise, actionable feedback that helps the candidate improve. Focus on:
 1. Technical accuracy and depth
@@ -50,17 +41,15 @@ Provide concise, actionable feedback that helps the candidate improve. Focus on:
 3. Completeness of the answer
 4. Areas for improvement
 
-Keep feedback encouraging but honest, limited to 2-3 sentences.`
-);
+Keep feedback encouraging but honest, limited to 2-3 sentences.`;
 
-const provideFeedbackOnResponsesFlow = ai.defineFlow(
-  {
-    name: 'provideFeedbackOnResponsesFlow',
-    inputSchema: ProvideFeedbackOnResponsesInputSchema,
-    outputSchema: ProvideFeedbackOnResponsesOutputSchema,
-  },
-  async input => {
-    const {output} = await provideFeedbackOnResponsesPrompt(input);
-    return output!;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const feedback = response.text();
+
+    return { feedback };
+  } catch (error) {
+    console.error('Error providing feedback:', error);
+    throw new Error('Failed to provide feedback');
   }
-);
+}

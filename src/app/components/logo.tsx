@@ -3,7 +3,7 @@ import type { FC } from 'react';
 
 export const Logo: FC = () => {
   return (
-    <div className="flex justify-center items-center p-4">
+    <div className="flex justify-center items-center p-4 mr-2">
       <Image
         src="/deployh-logo.png"
         alt="Voice Mock Interview Logo"

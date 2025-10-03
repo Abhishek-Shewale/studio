@@ -66,7 +66,7 @@ export function InterviewSetup({
   });
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-none border-0 md:border md:shadow-lg h-full flex flex-col">
+    <Card className="w-full shadow-none border-0 md:border md:shadow-lg h-full flex flex-col">
       <CardHeader className="flex-shrink-0 pb-2 pt-4">
         <CardTitle className="text-xl font-bold">
           Start a New Mock Interview

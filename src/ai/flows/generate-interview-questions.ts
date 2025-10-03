@@ -13,6 +13,7 @@ export interface GenerateInterviewQuestionsInput {
   difficulty: string;
   topics?: string[];
   questionBank?: string[];
+  resumeFile?: File;
 }
 
 export interface GenerateInterviewQuestionsOutput {
@@ -38,14 +39,36 @@ export async function generateInterviewQuestions(
       ? `\nFocus on the following topics:\n${input.topics.map(topic => `- ${topic}`).join('\n')}`
       : '';
 
+    const resumeText = input.resumeFile 
+      ? `\n\nA resume has been provided for this candidate. Please analyze the resume content and tailor the questions to their specific background, experience, and skills.`
+      : '';
+
     const prompt = `You are an expert interview question generator. Your task is to generate a list of 5 interview questions based on the provided criteria.
 
 Job Role: ${input.role}
-Difficulty: ${input.difficulty}${topicsText}
+Difficulty: ${input.difficulty}${topicsText}${resumeText}
 
-Please generate 5 insightful and relevant questions for this interview scenario. Return only the questions, one per line, without numbering or additional text.`;
+Please generate 5 insightful and relevant questions for this interview scenario. If a resume is provided, tailor the questions to the candidate's background and experience. Return only the questions, one per line, without numbering or additional text.`;
 
-    const result = await model.generateContent(prompt);
+    let result;
+    if (input.resumeFile) {
+      // Convert file to base64 for Gemini
+      const arrayBuffer = await input.resumeFile.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      
+      result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: base64,
+            mimeType: input.resumeFile.type,
+          },
+        },
+      ]);
+    } else {
+      result = await model.generateContent(prompt);
+    }
+    
     const response = await result.response;
     const text = response.text();
 

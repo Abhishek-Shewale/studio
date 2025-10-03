@@ -11,6 +11,7 @@ import {
   type InterviewSetupData,
 } from '@/app/components/interview-setup';
 import { InterviewSession } from '@/app/components/interview-session';
+import { ResumeUpload } from '@/app/components/resume-upload';
 import { useToast } from '@/hooks/use-toast';
 import { useSpeech } from '@/hooks/use-speech';
 import { useAuth } from '@/hooks/use-auth';
@@ -46,6 +47,7 @@ export default function NewInterviewPage() {
   } | null>(null);
   const [pendingSessionData, setPendingSessionData] = useState<SessionRecord[] | null>(null);
   const [interviewScore, setInterviewScore] = useState<{score: number, summary: string} | null>(null);
+  const [uploadedResume, setUploadedResume] = useState<File | null>(null);
   const { toast } = useToast();
   const { hasSpeechSupport } = useSpeech({});
   const [isClient, setIsClient] = useState(false);
@@ -82,6 +84,14 @@ export default function NewInterviewPage() {
     return null;
   }
 
+  const handleResumeUpload = (file: File) => {
+    setUploadedResume(file);
+  };
+
+  const handleResumeRemove = () => {
+    setUploadedResume(null);
+  };
+
   const handleStartInterview = async (data: InterviewSetupData) => {
     setInterviewState('generating');
     startTimeRef.current = new Date();
@@ -93,7 +103,8 @@ export default function NewInterviewPage() {
         await generateInterviewQuestions({
           ...data,
           topics,
-          questionBank
+          questionBank,
+          resumeFile: uploadedResume || undefined
         });
         
       if (result && result.questions && result.questions.length > 0) {
@@ -214,11 +225,18 @@ export default function NewInterviewPage() {
       case 'setup':
       case 'generating':
         return (
-          <InterviewSetup
-            onStartInterview={handleStartInterview}
-            isGenerating={interviewState === 'generating'}
-            hasSpeechSupport={isClient ? hasSpeechSupport : true}
-          />
+          <div className="grid md:grid-cols-2 gap-6 w-full max-w-6xl mx-auto h-full">
+            <InterviewSetup
+              onStartInterview={handleStartInterview}
+              isGenerating={interviewState === 'generating'}
+              hasSpeechSupport={isClient ? hasSpeechSupport : true}
+            />
+            <ResumeUpload
+              onResumeUpload={handleResumeUpload}
+              onResumeRemove={handleResumeRemove}
+              uploadedResume={uploadedResume}
+            />
+          </div>
         );
       case 'session':
         if (interviewData) {

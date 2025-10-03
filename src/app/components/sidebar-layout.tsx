@@ -53,12 +53,12 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
     },
     {
       href: '/new-interview',
-      label: 'New Interview',
+      label: 'New Mock Interview',
       icon: ClipboardPlus,
     },
     {
       href: '/past-interviews',
-      label: 'Past Interviews',
+      label: 'Past Mock Interviews',
       icon: History,
     },
   ];
@@ -86,28 +86,26 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter>
-          {/* Footer content can go here if needed */}
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex h-14 items-center justify-between gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
-          <SidebarTrigger className="md:hidden" />
-          <div className="flex-1" />
+        <SidebarFooter className="mb-5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full">
-                <Avatar>
-                  {user?.photoURL ? (
-                    <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>
-                  ) : (
-                    <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                  )}
-                </Avatar>
-                <span className="sr-only">Toggle user menu</span>
+              <Button variant="ghost" className="w-full justify-start p-2 h-auto -mt-5">
+                <div className="flex items-center gap-3 w-full">
+                  <Avatar className="h-8 w-8">
+                    {user?.photoURL ? (
+                      <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>
+                    ) : (
+                      <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="flex flex-col items-start text-left">
+                    <span className="text-sm font-medium">{user?.displayName || 'User'}</span>
+                    <span className="text-xs text-muted-foreground">Account</span>
+                  </div>
+                </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>{user?.displayName || 'My Account'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
@@ -116,8 +114,17 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </header>
-        <div className="invert-colors">{children}</div>
+        </SidebarFooter>
+      </Sidebar>
+      <SidebarInset>
+        <div className="flex h-full flex-col">
+          <div className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6 md:hidden">
+            <SidebarTrigger />
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <div className="h-full overflow-auto invert-colors">{children}</div>
+          </div>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

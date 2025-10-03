@@ -66,19 +66,19 @@ export function InterviewSetup({
   });
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-none border-0 md:border md:shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold">
-          Start a New Interview
+    <Card className="w-full max-w-2xl mx-auto shadow-none border-0 md:border md:shadow-lg h-full flex flex-col">
+      <CardHeader className="flex-shrink-0 pb-2 pt-4">
+        <CardTitle className="text-xl font-bold">
+          Start a New Mock Interview
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-sm">
           Customize your mock interview session to fit your needs.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col pt-2">
         {!hasSpeechSupport && (
-          <div className="mb-6 flex items-center gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive-foreground">
-            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-2 text-xs text-destructive-foreground">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
             <p>
               Your browser does not support the Web Speech API. Please use a
               recent version of Chrome for the full voice experience.
@@ -88,108 +88,111 @@ export function InterviewSetup({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onStartInterview)}
-            className="space-y-6"
+            className="space-y-3 flex-1 flex flex-col"
           >
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Job Role</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., Software Engineer"
-                      {...field}
-                      disabled={isGenerating}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    The position you&apos;re practicing for.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="difficulty"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Difficulty Level</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={isGenerating}
-                  >
+            <div className="flex-1 min-h-0 flex flex-col space-y-3">
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Job Role</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a difficulty" />
-                      </SelectTrigger>
+                      <Input
+                        placeholder="e.g., Software Engineer"
+                        {...field}
+                        disabled={isGenerating}
+                        className="h-8"
+                      />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Easy">Easy</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Hard">Hard</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Adjust the complexity of the questions.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormDescription className="text-xs">
+                      The position you&apos;re practicing for.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="topics"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Specific Topics (Optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., React, System Design"
-                      {...field}
+              <FormField
+                control={form.control}
+                name="difficulty"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Difficulty Level</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
                       disabled={isGenerating}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Comma-separated list of topics to focus on.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    >
+                      <FormControl>
+                        <SelectTrigger className="h-8">
+                          <SelectValue placeholder="Select a difficulty" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Easy">Easy</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="Hard">Hard</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription className="text-xs">
+                      Adjust the complexity of the questions.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="questionBank"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Question Bank (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Paste your custom questions here, one per line."
-                      className="min-h-[120px]"
-                      {...field}
-                      disabled={isGenerating}
-                    />
+              <FormField
+                control={form.control}
+                name="topics"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Specific Topics (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., React, System Design"
+                        {...field}
+                        disabled={isGenerating}
+                        className="h-8"
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Comma-separated list of topics to focus on.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  </FormControl>
-                  <FormDescription>
-                    Provide your own questions for the AI to use.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="questionBank"
+                render={({ field }) => (
+                  <FormItem className="flex-1 min-h-0 flex flex-col">
+                    <FormLabel className="text-sm">Question Bank (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Paste your custom questions here, one per line."
+                        className="min-h-[60px] flex-1 resize-none"
+                        {...field}
+                        disabled={isGenerating}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Provide your own questions for the AI to use.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full flex-shrink-0 h-9"
               disabled={isGenerating || !hasSpeechSupport}
-              size="lg"
+              size="sm"
             >
               {isGenerating ? (
                 <>
@@ -197,7 +200,7 @@ export function InterviewSetup({
                   Generating Questions...
                 </>
               ) : (
-                'Start Interview'
+                'Start Mock Interview'
               )}
             </Button>
           </form>

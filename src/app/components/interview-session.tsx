@@ -16,6 +16,7 @@ import {
   Bot,
   Loader2,
   Mic,
+  MicOff,
   Send,
   Sparkles,
   Volume2,
@@ -66,6 +67,8 @@ export function InterviewSession({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [status, setStatus] = useState<SessionStatus>('IDLE');
   const [feedback, setFeedback] = useState('');
+  const [feedbackAnalysis, setFeedbackAnalysis] = useState('');
+  const [feedbackTips, setFeedbackTips] = useState<string[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [userAnswer, setUserAnswer] = useState('');
   const [sessionHistory, setSessionHistory] = useState<SessionRecord[]>([]);
@@ -76,11 +79,15 @@ export function InterviewSession({
   const {speak, startListening, stopListening, cancelSpeaking, isListening, isSpeaking} =
     useSpeech({
       onListenResult: (transcript, isFinal) => {
-        setUserAnswer(transcript);
-        if (isFinal) {
-          stopListening();
-          handleSubmit(transcript);
+        // Only update the answer if we're not processing feedback
+        if (status !== 'PROCESSING') {
+          setUserAnswer(transcript);
         }
+        // Don't auto-submit on final - let user control when to submit
+        // if (isFinal) {
+        //   stopListening();
+        //   handleSubmit(transcript);
+        // }
       },
     });
 
@@ -103,7 +110,13 @@ export function InterviewSession({
       });
       
       const newFeedback = result?.feedback || 'No feedback was generated.';
+      const newAnalysis = result?.analysis || newFeedback;
+      const newTips = result?.tips || [];
+      
       setFeedback(newFeedback);
+      setFeedbackAnalysis(newAnalysis);
+      setFeedbackTips(newTips);
+      
       setSessionHistory(prev => [...prev, {
         question: currentQuestion,
         response: transcript,
@@ -114,7 +127,9 @@ export function InterviewSession({
       console.error('Feedback error:', error);
       const errorMessage = `Sorry, there was an error getting feedback: ${error.message}`;
       setFeedback(errorMessage);
-       setSessionHistory(prev => [...prev, {
+      setFeedbackAnalysis(errorMessage);
+      setFeedbackTips([]);
+      setSessionHistory(prev => [...prev, {
         question: currentQuestion,
         response: transcript,
         feedback: errorMessage,
@@ -126,6 +141,19 @@ export function InterviewSession({
 
   const nextQuestion = () => {
     if (currentQuestionIndex < allQuestions.length - 1) {
+      // Stop any ongoing speech recognition and clear the input
+      stopListening();
+      setUserAnswer('');
+      
+      // If user has an answer but hasn't submitted it, save it as skipped
+      if (userAnswer.trim()) {
+        setSessionHistory(prev => [...prev, {
+          question: currentQuestion,
+          response: userAnswer.trim(),
+          feedback: 'Question skipped by user',
+        }]);
+      }
+      
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
       speak('That was the last question. The interview is now complete. Great job!', () => onFinish(sessionHistory));
@@ -167,6 +195,10 @@ export function InterviewSession({
   const handleSubmit = (answer: string) => {
     const trimmedAnswer = answer.trim();
     if (trimmedAnswer) {
+      // Stop listening immediately when user submits
+      stopListening();
+      setStatus('PROCESSING');
+      
       setMessages(prev => [...prev, {sender: 'user', text: trimmedAnswer}]);
       getFeedback(trimmedAnswer);
       setUserAnswer('');
@@ -189,15 +221,15 @@ export function InterviewSession({
   const isLastQuestion = currentQuestionIndex >= allQuestions.length - 1;
 
   return (
-    <div className="grid md:grid-cols-2 gap-8 w-full max-w-7xl mx-auto animate-fade-in">
+    <div className="grid md:grid-cols-2 gap-8 w-full max-w-7xl mx-auto animate-fade-in h-full">
       {/* Left Column: Interview Chat */}
-      <div className="flex flex-col h-[85vh]">
-        <header className="mb-4">
-          <h1 className="text-3xl font-bold capitalize">{settings.role} Interview</h1>
-          <p className="text-muted-foreground">Difficulty: {settings.difficulty}</p>
+      <div className="flex flex-col h-full">
+        <header className="mb-4 flex-shrink-0">
+          <h1 className="text-2xl font-bold capitalize">{settings.role} Mock Interview</h1>
+          <p className="text-muted-foreground text-sm">Difficulty: {settings.difficulty}</p>
         </header>
 
-        <ScrollArea className="flex-grow pr-4 -mr-4 mb-4">
+        <ScrollArea className="flex-1 pr-4 -mr-4 mb-4">
           <div className="space-y-6">
             {messages.map((message, index) => (
               <div
@@ -242,21 +274,29 @@ export function InterviewSession({
         <div className="mt-auto">
            <div className="relative">
             <Textarea
-              placeholder="Type your answer here or use the microphone..."
+              placeholder={status === 'ASKING' ? "Please wait for the question to finish..." : "Type your answer here or speak (mic is active)..."}
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
               onKeyDown={handleKeyDown}
               className="pr-24 min-h-[60px]"
-              disabled={isListening || status === 'PROCESSING'}
+              disabled={status === 'ASKING' || status === 'PROCESSING'}
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={() => speak(userAnswer)} disabled={!userAnswer}>
-                <Volume2 className="h-5 w-5" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleListen} 
+                className={isListening ? 'text-red-500' : 'text-muted-foreground'}
+                disabled={status === 'ASKING' || status === 'PROCESSING'}
+                title={status === 'ASKING' ? 'Wait for question to finish' : isListening ? 'Click to stop recording' : 'Click to start recording'}
+              >
+                {isListening ? (
+                  <Mic className="h-5 w-5" />
+                ) : (
+                  <MicOff className="h-5 w-5" />
+                )}
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleListen} className={isListening ? 'text-red-500' : ''}>
-                <Mic className="h-5 w-5" />
-              </Button>
-              <Button size="sm" onClick={() => handleSubmit(userAnswer)} disabled={!userAnswer || isListening}>
+              <Button size="sm" onClick={() => handleSubmit(userAnswer)} disabled={!userAnswer || status === 'ASKING'}>
                 <Send className="h-4 w-4 mr-2" /> Send
               </Button>
             </div>
@@ -265,34 +305,55 @@ export function InterviewSession({
       </div>
 
       {/* Right Column: Feedback */}
-      <div className="flex flex-col">
-        <Card className="h-[526px]">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+      <div className="flex flex-col h-full">
+        <Card className="h-[570px] flex flex-col">
+          <CardHeader className="flex-shrink-0">
+            <CardTitle className="flex items-center gap-2 text-lg">
               <Sparkles className="text-primary" /> Real-time Feedback
             </CardTitle>
-            <CardDescription>AI analysis of your latest response.</CardDescription>
+            <CardDescription className="text-sm">AI analysis of your latest response.</CardDescription>
           </CardHeader>
-          <CardContent className="h-full overflow-y-auto">
+          <CardContent className="flex-1 overflow-y-auto p-4 min-h-0">
             {status === 'PROCESSING' ? (
               <div className="flex items-center justify-center gap-2 text-muted-foreground h-full">
                 <Loader2 className="animate-spin h-5 w-5" />
                 <span>Analyzing...</span>
               </div>
             ) : feedback ? (
-              <p className="leading-relaxed">{feedback}</p>
+              <div className="space-y-4 min-h-0">
+                {/* Analysis Section */}
+                <div>
+                  <h4 className="font-semibold text-sm mb-2 text-foreground">Analysis</h4>
+                  <p className="leading-relaxed text-sm text-muted-foreground">{feedbackAnalysis}</p>
+                </div>
+                
+                {/* Tips Section */}
+                {feedbackTips.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2 text-foreground">Tips</h4>
+                    <ul className="space-y-1">
+                      {feedbackTips.map((tip, index) => (
+                        <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <span className="text-primary mt-1">•</span>
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground text-center">
+                <p className="text-muted-foreground text-center text-sm">
                   Your feedback will appear here after you respond.
                 </p>
               </div>
             )}
           </CardContent>
         </Card>
-        <div className="flex mt-4 gap-4">
-          <Button onClick={nextQuestion} disabled={status === 'PROCESSING' || isListening || isLastQuestion}>Next Question</Button>
-          <Button variant="destructive" onClick={handleEndInterview}>End Interview</Button>
+        <div className="flex mt-4 gap-4 flex-shrink-0">
+          <Button onClick={nextQuestion} disabled={status === 'PROCESSING' || isLastQuestion} size="sm">Next Question</Button>
+          <Button variant="destructive" onClick={handleEndInterview} size="sm">End Mock Interview</Button>
         </div>
       </div>
     </div>

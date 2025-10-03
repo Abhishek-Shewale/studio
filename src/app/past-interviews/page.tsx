@@ -61,7 +61,7 @@ export default function PastInterviewsPage() {
         const formattedInterviews = pastInterviews.map(iv => ({
           ...iv,
           // Firestore Timestamps need to be converted to JS Date objects.
-          date: (iv.date as any).toDate ? (iv.date as any).toDate() : new Date(iv.date),
+          date: (iv.date as any).toDate ? (iv.date as any).toDate() : new Date(iv.date as Date),
         }));
         setInterviews(formattedInterviews);
         setFilteredInterviews(formattedInterviews);
@@ -86,8 +86,8 @@ export default function PastInterviewsPage() {
           bValue = b.role.toLowerCase();
           break;
         case 'date':
-          aValue = new Date(a.date).getTime();
-          bValue = new Date(b.date).getTime();
+          aValue = new Date(a.date as Date).getTime();
+          bValue = new Date(b.date as Date).getTime();
           break;
         case 'score':
           aValue = a.score;
@@ -120,104 +120,104 @@ export default function PastInterviewsPage() {
       setInterviews(prev => prev.filter(interview => interview.id !== interviewId));
       setDeleteInterviewId(null);
       toast({
-        title: 'Interview Deleted',
+        title: 'Mock Interview Deleted',
         description: 'The interview has been successfully deleted.',
       });
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to delete the interview. Please try again.',
+        description: 'Failed to delete the mock interview. Please try again.',
       });
     }
   };
 
   const renderTable = () => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>
-            <Button variant="ghost" onClick={() => handleSort('role')}>
-              Role
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          </TableHead>
-          <TableHead>
-            <Button variant="ghost" onClick={() => handleSort('date')}>
-              Date
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          </TableHead>
-          <TableHead>Duration</TableHead>
-          <TableHead>
-             <Button variant="ghost" onClick={() => handleSort('score')}>
-              Score
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          </TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {loading ? (
+    <div className="h-full overflow-auto">
+      <Table>
+        <TableHeader className="sticky top-0 bg-background z-10">
           <TableRow>
-            <TableCell colSpan={5} className="h-24 text-center">
-              Loading...
-            </TableCell>
+            <TableHead>
+              <Button variant="ghost" onClick={() => handleSort('role')} size="sm">
+                Role
+                <ArrowUpDown className="ml-2 h-3 w-3" />
+              </Button>
+            </TableHead>
+            <TableHead>
+              <Button variant="ghost" onClick={() => handleSort('date')} size="sm">
+                Date
+                <ArrowUpDown className="ml-2 h-3 w-3" />
+              </Button>
+            </TableHead>
+            <TableHead>Duration</TableHead>
+            <TableHead>
+               <Button variant="ghost" onClick={() => handleSort('score')} size="sm">
+                Score
+                <ArrowUpDown className="ml-2 h-3 w-3" />
+              </Button>
+            </TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
-        ) : filteredInterviews.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={5} className="h-24 text-center">
-              No interviews found.
-            </TableCell>
-          </TableRow>
-        ) : (
-          filteredInterviews.map((interview) => (
-            <TableRow key={interview.id}>
-              <TableCell>{interview.role}</TableCell>
-              <TableCell>{new Date(interview.date).toLocaleDateString()}</TableCell>
-              <TableCell>{interview.duration} min</TableCell>
-              <TableCell>{interview.score}%</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setSelectedInterview(interview)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View Details
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setDeleteInterviewId(interview.id!)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={5} className="h-24 text-center">
+                Loading...
               </TableCell>
             </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
+          ) : filteredInterviews.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="h-24 text-center">
+                No mock interviews found.
+              </TableCell>
+            </TableRow>
+          ) : (
+            filteredInterviews.map((interview) => (
+              <TableRow key={interview.id}>
+                <TableCell className="text-sm">{interview.role}</TableCell>
+                <TableCell className="text-sm">{new Date(interview.date as Date).toLocaleDateString()}</TableCell>
+                <TableCell className="text-sm">{interview.duration} min</TableCell>
+                <TableCell className="text-sm">{interview.score}%</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setSelectedInterview(interview)}
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      View
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setDeleteInterviewId(interview.id!)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 
   return (
-    <div className="flex-1 space-y-8 p-4 md:p-8">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">
-            Past Interviews
-          </h2>
-          <p className="text-muted-foreground">
-            Review your previous sessions to track your progress.
-          </p>
-        </div>
+    <div className="h-full flex flex-col p-4 md:p-6">
+      <div className="flex-shrink-0 mb-4">
+        <h2 className="text-2xl font-bold tracking-tight">
+          Past Mock Interviews
+        </h2>
+        <p className="text-muted-foreground text-sm mt-1">
+          Review your previous sessions to track your progress.
+        </p>
       </div>
-      <div className="border rounded-lg">
+      <div className="flex-1 min-h-0 border rounded-lg">
         {renderTable()}
       </div>
 
@@ -225,11 +225,11 @@ export default function PastInterviewsPage() {
       <Dialog open={!!selectedInterview} onOpenChange={() => setSelectedInterview(null)}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Interview Details</DialogTitle>
+            <DialogTitle>Mock Interview Details</DialogTitle>
             <DialogDescription>
               {selectedInterview && (
                 <>
-                  {selectedInterview.role} Interview - {new Date(selectedInterview.date).toLocaleDateString()}
+                  {selectedInterview.role} Mock Interview - {new Date(selectedInterview.date as Date).toLocaleDateString()}
                   <br />
                   Score: {selectedInterview.score}% | Duration: {selectedInterview.duration} minutes
                 </>
@@ -274,9 +274,9 @@ export default function PastInterviewsPage() {
       <AlertDialog open={!!deleteInterviewId} onOpenChange={() => setDeleteInterviewId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Interview</AlertDialogTitle>
+            <AlertDialogTitle>Delete Mock Interview</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this interview? This action cannot be undone.
+              Are you sure you want to delete this mock interview? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

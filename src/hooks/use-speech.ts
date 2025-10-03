@@ -70,6 +70,7 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: any) => {
       console.log('=== SPEECH RECOGNITION RESULT ===');
@@ -119,6 +120,21 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
       console.error('Error:', event.error);
       console.error('Message:', event.message);
       setIsListening(false);
+      
+      // Handle specific error types
+      if (event.error === 'no-speech') {
+        console.log('No speech detected, restarting recognition...');
+        // Auto-restart if no speech detected
+        setTimeout(() => {
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.start();
+            } catch (e) {
+              console.log('Could not restart recognition:', e);
+            }
+          }
+        }, 1000);
+      }
     };
 
     recognitionRef.current = recognition;

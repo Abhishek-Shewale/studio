@@ -29,7 +29,7 @@ import {
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-type InterviewState = 'setup' | 'generating' | 'session' | 'scoring' | 'finished' | 'save-confirmation';
+type InterviewState = 'setup' | 'generating' | 'session' | 'scoring' | 'score-display' | 'finished';
 
 type SessionRecord = {
   question: string;
@@ -44,6 +44,7 @@ export default function NewInterviewPage() {
     questions: string[];
   } | null>(null);
   const [pendingSessionData, setPendingSessionData] = useState<SessionRecord[] | null>(null);
+  const [interviewScore, setInterviewScore] = useState<{score: number, summary: string} | null>(null);
   const { toast } = useToast();
   const { hasSpeechSupport } = useSpeech({});
   const [isClient, setIsClient] = useState(false);
@@ -55,6 +56,13 @@ export default function NewInterviewPage() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Auto-trigger scoring when state changes to 'scoring'
+  useEffect(() => {
+    if (interviewState === 'scoring' && pendingSessionData && interviewData) {
+      handleScoreInterview();
+    }
+  }, [interviewState, pendingSessionData, interviewData]);
 
   if (loading) {
     return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
@@ -99,16 +107,12 @@ export default function NewInterviewPage() {
 
   const handleFinishInterview = (sessionData: SessionRecord[]) => {
     setPendingSessionData(sessionData);
-    setInterviewState('save-confirmation');
+    setInterviewState('scoring');
   };
 
-  const handleSaveInterview = async () => {
-    if (!user || !interviewData || !startTimeRef.current || !pendingSessionData) return;
+  const handleScoreInterview = async () => {
+    if (!interviewData || !pendingSessionData) return;
     
-    setInterviewState('scoring');
-    const endTime = new Date();
-    const duration = Math.round((endTime.getTime() - startTimeRef.current.getTime()) / 60000); // in minutes
-
     try {
       // Get AI-powered score and summary
       const { score, summary } = await scoreInterview({
@@ -117,14 +121,34 @@ export default function NewInterviewPage() {
         interview: pendingSessionData,
       });
 
+      setInterviewScore({ score, summary });
+      setInterviewState('score-display');
+    } catch (error) {
+      console.error('Error scoring interview:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'There was a problem scoring your mock interview.',
+      });
+      setInterviewState('finished');
+    }
+  };
+
+  const handleSaveInterview = async () => {
+    if (!user || !interviewData || !startTimeRef.current || !pendingSessionData || !interviewScore) return;
+    
+    const endTime = new Date();
+    const duration = Math.round((endTime.getTime() - startTimeRef.current.getTime()) / 60000); // in minutes
+
+    try {
       await saveInterview({
         userId: user.uid,
         role: interviewData.settings.role,
         difficulty: interviewData.settings.difficulty,
         date: new Date(),
         duration,
-        score: score,
-        summary: summary,
+        score: interviewScore.score,
+        summary: interviewScore.summary,
         questions: pendingSessionData.map((s:any) => ({
           question: s.question,
           response: s.response,
@@ -132,29 +156,44 @@ export default function NewInterviewPage() {
         })),
       });
        toast({
-        title: 'Interview Saved',
-        description: 'Your interview session has been saved successfully.',
+        title: 'Mock Interview Saved',
+        description: 'Your mock interview session has been saved successfully.',
       });
     } catch (error) {
        toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'There was a problem saving your interview.',
+        description: 'There was a problem saving your mock interview.',
       });
     }
 
     setPendingSessionData(null);
+    setInterviewScore(null);
     setInterviewState('finished');
   };
 
   const handleSkipSave = () => {
     setPendingSessionData(null);
+    setInterviewScore(null);
     setInterviewState('finished');
   };
 
   const handleRestart = () => {
     setInterviewData(null);
     setInterviewState('setup');
+  };
+
+  const getScoreCategory = (score: number) => {
+    if (score >= 90) return { category: 'Outstanding', color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-200' };
+    if (score >= 80) return { category: 'Excellent', color: 'text-green-500', bgColor: 'bg-green-50', borderColor: 'border-green-200' };
+    if (score >= 70) return { category: 'Very Good', color: 'text-blue-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' };
+    if (score >= 60) return { category: 'Good', color: 'text-blue-500', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' };
+    if (score >= 50) return { category: 'Developing', color: 'text-yellow-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' };
+    if (score >= 40) return { category: 'Needs Improvement', color: 'text-orange-600', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' };
+    if (score >= 30) return { category: 'Room for Growth', color: 'text-orange-500', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' };
+    if (score >= 20) return { category: 'More Practice Needed', color: 'text-red-500', bgColor: 'bg-red-50', borderColor: 'border-red-200' };
+    if (score >= 10) return { category: 'Significant Improvement Needed', color: 'text-red-400', bgColor: 'bg-red-50', borderColor: 'border-red-200' };
+    return { category: 'Major Improvement Required', color: 'text-red-400', bgColor: 'bg-red-50', borderColor: 'border-red-200' };
   };
   
   const handleGoToDashboard = () => {
@@ -197,40 +236,65 @@ export default function NewInterviewPage() {
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </CardContent>
           </Card>
-        )
-      case 'save-confirmation':
+        );
+      case 'score-display':
+        if (!interviewScore) {
+          handleRestart();
+          return null;
+        }
+        const scoreCategory = getScoreCategory(interviewScore.score);
         return (
-          <Dialog open={true} onOpenChange={() => {}}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Save Interview?</DialogTitle>
-                <DialogDescription>
-                  Would you like to save this interview session to your history? You can review it later and track your progress.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter className="flex gap-2">
-                <Button variant="outline" onClick={handleSkipSave}>
-                  Skip
+          <Card className="w-full max-w-2xl mx-auto text-center p-8 shadow-2xl">
+            <CardHeader>
+              <CardTitle className="text-3xl font-bold flex items-center justify-center gap-2">
+                <Sparkles className="h-8 w-8 text-primary" />
+                Mock Interview Complete!
+              </CardTitle>
+              <CardDescription className="pt-2 text-lg">
+                Here's how you performed in your {interviewData?.settings.role} mock interview
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6">
+              {/* Score Display */}
+              <div className={`rounded-lg border-2 ${scoreCategory.borderColor} ${scoreCategory.bgColor} p-6`}>
+                <div className="text-6xl font-bold mb-2">{interviewScore.score}%</div>
+                <div className={`text-xl font-semibold ${scoreCategory.color}`}>
+                  {scoreCategory.category}
+                </div>
+              </div>
+              
+              {/* Summary */}
+              <div className="text-left bg-secondary/50 rounded-lg p-4">
+                <h3 className="font-semibold mb-2 text-center">Performance Summary</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {interviewScore.summary}
+                </p>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button onClick={handleSaveInterview} size="lg" className="flex-1">
+                  Save Mock Interview
                 </Button>
-                <Button onClick={handleSaveInterview}>
-                  Save Interview
+                <Button onClick={handleSkipSave} size="lg" variant="outline" className="flex-1">
+                  Skip Saving
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </div>
+            </CardContent>
+          </Card>
         );
       case 'finished':
         return (
           <Card className="w-full max-w-lg mx-auto text-center p-8 shadow-2xl">
             <CardHeader>
-              <CardTitle className="text-3xl font-bold">Interview Complete!</CardTitle>
+              <CardTitle className="text-3xl font-bold">Mock Interview Complete!</CardTitle>
               <CardDescription className="pt-2">
                 You did a great job. Practice makes perfect! {pendingSessionData ? 'Your performance has been saved.' : 'Your session was not saved.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <Button onClick={handleRestart} size="lg">
-                Start New Interview
+                Start New Mock Interview
               </Button>
                <Button onClick={handleGoToDashboard} size="lg" variant="outline">
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -243,8 +307,8 @@ export default function NewInterviewPage() {
   };
 
   return (
-    <main className="flex min-h-[calc(100vh-60px)] flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-      <div className="w-full">{renderContent()}</div>
+    <main className="h-full flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="w-full h-full flex items-center justify-center">{renderContent()}</div>
     </main>
   );
 }

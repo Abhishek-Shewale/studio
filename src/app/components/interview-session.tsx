@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useEffect, useRef} from 'react';
+import {useState, useEffect, useRef, useCallback} from 'react';
 import type {InterviewSetupData} from './interview-setup';
 import {provideFeedbackOnResponses} from '@/ai/flows/provide-feedback-on-responses';
 import {useSpeech} from '@/hooks/use-speech';
@@ -72,6 +72,20 @@ export function InterviewSession({
   const [messages, setMessages] = useState<Message[]>([]);
   const [userAnswer, setUserAnswer] = useState('');
   const [sessionHistory, setSessionHistory] = useState<SessionRecord[]>([]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Auto-resize textarea function
+  const autoResizeTextarea = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      
+      // Calculate new height (min 60px, max 200px to prevent overlap)
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 60), 200);
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, []);
   
   // Combine introductory questions with technical questions
   const allQuestions = [...INTRODUCTORY_QUESTIONS, ...questions];
@@ -82,6 +96,8 @@ export function InterviewSession({
         // Only update the answer if we're not processing feedback
         if (status !== 'PROCESSING') {
           setUserAnswer(transcript);
+          // Auto-resize after speech recognition updates
+          setTimeout(autoResizeTextarea, 0);
         }
         // Don't auto-submit on final - let user control when to submit
         // if (isFinal) {
@@ -145,6 +161,11 @@ export function InterviewSession({
       stopListening();
       setUserAnswer('');
       
+      // Reset textarea height
+      if (textareaRef.current) {
+        textareaRef.current.style.height = '60px';
+      }
+      
       // If user has an answer but hasn't submitted it, save it as skipped
       if (userAnswer.trim()) {
         setSessionHistory(prev => [...prev, {
@@ -202,7 +223,19 @@ export function InterviewSession({
       setMessages(prev => [...prev, {sender: 'user', text: trimmedAnswer}]);
       getFeedback(trimmedAnswer);
       setUserAnswer('');
+      // Reset textarea height after clearing
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.style.height = '60px';
+        }
+      }, 0);
     }
+  };
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setUserAnswer(e.target.value);
+    // Auto-resize after state update
+    setTimeout(autoResizeTextarea, 0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -274,14 +307,15 @@ export function InterviewSession({
         <div className="mt-auto">
            <div className="relative">
             <Textarea
+              ref={textareaRef}
               placeholder={status === 'ASKING' ? "Please wait for the question to finish..." : "Type your answer here or speak (mic is active)..."}
               value={userAnswer}
-              onChange={(e) => setUserAnswer(e.target.value)}
+              onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
-              className="pr-24 min-h-[60px]"
+              className="pr-24 min-h-[60px] max-h-[200px] resize-none overflow-y-auto"
               disabled={status === 'ASKING' || status === 'PROCESSING'}
             />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <div className="absolute right-2 bottom-2 flex items-center gap-1">
               <Button 
                 variant="ghost" 
                 size="icon" 

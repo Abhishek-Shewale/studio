@@ -197,7 +197,7 @@ export function InterviewSetup({
               {isGenerating ? (
                 <>
                   <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                  Generating Questions...
+                  Starting Mock Interview...
                 </>
               ) : (
                 'Start Mock Interview'

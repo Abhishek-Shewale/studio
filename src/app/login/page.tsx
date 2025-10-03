@@ -14,6 +14,19 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Logo } from '@/app/components/logo';
 
+// Extend Window interface for Google accounts
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        id?: {
+          disableAutoSelect?: () => void;
+        };
+      };
+    };
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -32,6 +45,12 @@ export default function LoginPage() {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
+    
+    // Force account selection and clear any cached credentials
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+    
     try {
       await signInWithPopup(auth, provider);
     } catch (error) {
@@ -40,11 +59,7 @@ export default function LoginPage() {
   };
 
   if (user) {
-    return (
-       <div className="flex h-screen w-full items-center justify-center">
-        <p>Redirecting to dashboard...</p>
-      </div>
-    );
+    return null; // Let the router handle the redirect without showing loading
   }
 
   return (

@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, Trash2 } from 'lucide-react';
+import { ProgressSpinner } from '@/components/ui/countdown-spinner';
 import {
   Dialog,
   DialogContent,
@@ -77,7 +78,13 @@ export default function DashboardPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex h-screen items-center justify-center">Loading...</div>
+      <div className="flex h-screen items-center justify-center">
+        <ProgressSpinner 
+          duration={2} 
+          size="lg" 
+          message="Loading your dashboard..." 
+        />
+      </div>
     );
   }
 

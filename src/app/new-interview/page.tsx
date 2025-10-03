@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
+import { ProgressSpinner } from '@/components/ui/countdown-spinner';
 
 type InterviewState = 'setup' | 'generating' | 'session' | 'scoring' | 'score-display' | 'finished';
 
@@ -65,7 +66,15 @@ export default function NewInterviewPage() {
   }, [interviewState, pendingSessionData, interviewData]);
 
   if (loading) {
-    return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <ProgressSpinner 
+          duration={2} 
+          size="lg" 
+          message="Loading..." 
+        />
+      </div>
+    );
   }
   
   if (!user && !loading) {
@@ -233,7 +242,11 @@ export default function NewInterviewPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <ProgressSpinner 
+                duration={3} 
+                size="lg" 
+                message="Processing your responses..." 
+              />
             </CardContent>
           </Card>
         );

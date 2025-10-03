@@ -35,6 +35,19 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
 
+// Extend Window interface for Google accounts
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        id?: {
+          disableAutoSelect?: () => void;
+        };
+      };
+    };
+  }
+}
+
 export function SidebarLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
@@ -45,9 +58,34 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
     setIsLoggingOut(true);
     
     // Show loading for 3 seconds, then logout
-    setTimeout(() => {
-      auth.signOut();
-      router.push('/login');
+    setTimeout(async () => {
+      try {
+        // Sign out from Firebase
+        await auth.signOut();
+        
+        // Clear any cached authentication data
+        if (typeof window !== 'undefined') {
+          // Clear localStorage and sessionStorage
+          localStorage.clear();
+          sessionStorage.clear();
+          
+          // Clear any cached Google credentials
+          if (window.google && window.google.accounts && window.google.accounts.id && window.google.accounts.id.disableAutoSelect) {
+            try {
+              window.google.accounts.id.disableAutoSelect();
+            } catch (error) {
+              console.warn('Could not disable Google auto-select:', error);
+            }
+          }
+        }
+        
+        // Redirect to login
+        router.push('/login');
+      } catch (error) {
+        console.error('Error during logout:', error);
+        // Still redirect even if there's an error
+        router.push('/login');
+      }
     }, 3000);
   };
 

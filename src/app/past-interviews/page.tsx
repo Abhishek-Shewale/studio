@@ -31,6 +31,7 @@ import { getPastInterviews, deleteInterview, InterviewRecord } from '@/lib/inter
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { ProgressSpinner } from '@/components/ui/countdown-spinner';
 
 type SortField = 'role' | 'date' | 'score';
 type SortDirection = 'asc' | 'desc';
@@ -163,7 +164,11 @@ export default function PastInterviewsPage() {
           {loading ? (
             <TableRow>
               <TableCell colSpan={5} className="h-24 text-center">
-                Loading...
+                <ProgressSpinner 
+                  duration={2} 
+                  size="sm" 
+                  message="Loading interviews..." 
+                />
               </TableCell>
             </TableRow>
           ) : filteredInterviews.length === 0 ? (

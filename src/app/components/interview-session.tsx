@@ -24,6 +24,7 @@ import {
 import {Avatar, AvatarFallback} from '@/components/ui/avatar';
 import {Textarea} from '@/components/ui/textarea';
 import {ScrollArea} from '@/components/ui/scroll-area';
+import {CountdownTimer} from '@/components/ui/countdown-timer';
 
 interface InterviewSessionProps {
   settings: InterviewSetupData;
@@ -66,9 +67,9 @@ export function InterviewSession({
 }: InterviewSessionProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [status, setStatus] = useState<SessionStatus>('IDLE');
-  const [feedback, setFeedback] = useState('');
-  const [feedbackAnalysis, setFeedbackAnalysis] = useState('');
-  const [feedbackTips, setFeedbackTips] = useState<string[]>([]);
+  const [goodPoints, setGoodPoints] = useState<string[]>([]);
+  const [confidentPoints, setConfidentPoints] = useState<string[]>([]);
+  const [improvementPoints, setImprovementPoints] = useState<string[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [userAnswer, setUserAnswer] = useState('');
   const [sessionHistory, setSessionHistory] = useState<SessionRecord[]>([]);
@@ -111,7 +112,6 @@ export function InterviewSession({
 
   const getFeedback = async (transcript: string) => {
     if (!transcript || transcript.trim().length === 0) {
-      setFeedback('No response detected. Please try speaking or typing again.');
       setStatus('IDLE');
       return;
     }
@@ -125,26 +125,26 @@ export function InterviewSession({
         experienceLevel: settings.difficulty,
       });
       
-      const newFeedback = result?.feedback || 'No feedback was generated.';
-      const newAnalysis = result?.analysis || newFeedback;
-      const newTips = result?.tips || [];
+      const newGoodPoints = result?.goodPoints || [];
+      const newConfidentPoints = result?.confidentPoints || [];
+      const newImprovementPoints = result?.improvementPoints || [];
       
-      setFeedback(newFeedback);
-      setFeedbackAnalysis(newAnalysis);
-      setFeedbackTips(newTips);
+      setGoodPoints(newGoodPoints);
+      setConfidentPoints(newConfidentPoints);
+      setImprovementPoints(newImprovementPoints);
       
       setSessionHistory(prev => [...prev, {
         question: currentQuestion,
         response: transcript,
-        feedback: newFeedback,
+        feedback: `Good Points: ${newGoodPoints.join(', ')} | Confident Points: ${newConfidentPoints.join(', ')} | Improvement Points: ${newImprovementPoints.join(', ')}`,
       }]);
 
     } catch (error: any) {
       console.error('Feedback error:', error);
       const errorMessage = `Sorry, there was an error getting feedback: ${error.message}`;
-      setFeedback(errorMessage);
-      setFeedbackAnalysis(errorMessage);
-      setFeedbackTips([]);
+      setGoodPoints([]);
+      setConfidentPoints([]);
+      setImprovementPoints([]);
       setSessionHistory(prev => [...prev, {
         question: currentQuestion,
         response: transcript,
@@ -160,6 +160,11 @@ export function InterviewSession({
       // Stop any ongoing speech recognition and clear the input
       stopListening();
       setUserAnswer('');
+      
+      // Clear previous feedback
+      setGoodPoints([]);
+      setConfidentPoints([]);
+      setImprovementPoints([]);
       
       // Reset textarea height
       if (textareaRef.current) {
@@ -184,8 +189,11 @@ export function InterviewSession({
   useEffect(() => {
     if (currentQuestion) {
       setMessages([{ sender: 'ai', text: currentQuestion }]);
-      setFeedback('');
       setUserAnswer('');
+      // Clear previous feedback when new question starts
+      setGoodPoints([]);
+      setConfidentPoints([]);
+      setImprovementPoints([]);
       setStatus('ASKING');
     }
   }, [currentQuestion]);
@@ -200,7 +208,7 @@ export function InterviewSession({
         setStatus('LISTENING');
       });
     }
-  }, [status, currentQuestion, speak, startListening]);
+  }, [status, speak, startListening]);
 
 
   const handleListen = () => {
@@ -258,7 +266,16 @@ export function InterviewSession({
       {/* Left Column: Interview Chat */}
       <div className="flex flex-col h-full">
         <header className="mb-4 flex-shrink-0">
-          <h1 className="text-2xl font-bold capitalize">{settings.role} Mock Interview</h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-2xl font-bold capitalize">{settings.role} Mock Interview</h1>
+            <CountdownTimer 
+              duration={30} 
+              onTimeUp={() => {
+                // Auto-end interview when time is up
+                handleEndInterview();
+              }}
+            />
+          </div>
           <p className="text-muted-foreground text-sm">Difficulty: {settings.difficulty}</p>
         </header>
 
@@ -347,29 +364,53 @@ export function InterviewSession({
             </CardTitle>
             <CardDescription className="text-sm">AI analysis of your latest response.</CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto p-4 min-h-0">
+          <CardContent className="flex-1 overflow-y-auto px-4 min-h-0">
             {status === 'PROCESSING' ? (
               <div className="flex items-center justify-center gap-2 text-muted-foreground h-full">
                 <Loader2 className="animate-spin h-5 w-5" />
                 <span>Analyzing...</span>
               </div>
-            ) : feedback ? (
+            ) : (goodPoints.length > 0 || confidentPoints.length > 0 || improvementPoints.length > 0) ? (
               <div className="space-y-4 min-h-0">
-                {/* Analysis Section */}
-                <div>
-                  <h4 className="font-semibold text-sm mb-2 text-foreground">Analysis</h4>
-                  <p className="leading-relaxed text-sm text-muted-foreground">{feedbackAnalysis}</p>
-                </div>
-                
-                {/* Tips Section */}
-                {feedbackTips.length > 0 && (
+                {/* Good Points Section */}
+                {goodPoints.length > 0 && (
                   <div>
-                    <h4 className="font-semibold text-sm mb-2 text-foreground">Tips</h4>
+                    <h4 className="font-semibold text-sm mb-2 text-green-600">You are good at -</h4>
                     <ul className="space-y-1">
-                      {feedbackTips.map((tip, index) => (
+                      {goodPoints.map((point, index) => (
                         <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                          <span className="text-primary mt-1">•</span>
-                          <span>{tip}</span>
+                          <span className="text-green-500 mt-1">•</span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Confident Points Section */}
+                {confidentPoints.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2 text-blue-600">You are confident at -</h4>
+                    <ul className="space-y-1">
+                      {confidentPoints.map((point, index) => (
+                        <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <span className="text-blue-500 mt-1">•</span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Improvement Points Section */}
+                {improvementPoints.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2 text-orange-600">Improvement areas -</h4>
+                    <ul className="space-y-1">
+                      {improvementPoints.map((point, index) => (
+                        <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <span className="text-orange-500 mt-1">•</span>
+                          <span>{point}</span>
                         </li>
                       ))}
                     </ul>

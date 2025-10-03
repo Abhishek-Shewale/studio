@@ -1,10 +1,16 @@
-import { BrainCircuit } from 'lucide-react';
+import Image from 'next/image';
 import type { FC } from 'react';
 
 export const Logo: FC = () => {
   return (
-    <div className="flex items-center gap-2">
-      {/* Logo will be added here later */}
+    <div className="flex justify-center items-center p-4">
+      <Image
+        src="/deployh-logo.png"
+        alt="Voice Mock Interview Logo"
+        width={128}
+        height={128}
+        className="object-contain rounded-md"
+      />
     </div>
   );
 };

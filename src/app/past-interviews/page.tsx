@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ArrowUpDown, Eye, Trash2 } from 'lucide-react';
+import { ArrowUpDown, Eye, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getPastInterviews, deleteInterview, InterviewRecord } from '@/lib/interview-service';
 import { useAuth } from '@/hooks/use-auth';
@@ -229,6 +229,17 @@ export default function PastInterviewsPage() {
       {/* View Details Dialog */}
       <Dialog open={!!selectedInterview} onOpenChange={() => setSelectedInterview(null)}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          {/* Sticky Close Button */}
+          <div className="sticky top-0 z-10 flex justify-end mb-4">
+            <Button
+              variant="outline"
+              size="icon"
+              className="bg-background/90 backdrop-blur-sm border-2"
+              onClick={() => setSelectedInterview(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
           <DialogHeader>
             <DialogTitle>Mock Interview Details</DialogTitle>
             <DialogDescription>

@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,6 +18,7 @@ interface ResumeUploadProps {
   onResumeRemove: () => void;
   uploadedResume: File | null;
   className?: string;
+  isParsing?: boolean;
 }
 
 export function ResumeUpload({
@@ -25,6 +26,7 @@ export function ResumeUpload({
   onResumeRemove,
   uploadedResume,
   className,
+  isParsing = false,
 }: ResumeUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,7 +37,7 @@ export function ResumeUpload({
       onResumeUpload(file);
       toast({
         title: 'PDF Uploaded',
-        description: 'PDF file uploaded successfully. AI will extract the content.',
+        description: 'PDF file uploaded successfully. AI is extracting the content...',
       });
     } else {
       toast({
@@ -134,7 +136,7 @@ export function ResumeUpload({
               <div>
                 <CardTitle className="text-lg font-bold">Resume Preview</CardTitle>
                 <CardDescription className="text-sm">
-                  Preview of your uploaded resume
+                  {isParsing ? 'AI is extracting information from your resume...' : 'Preview of your uploaded resume'}
                 </CardDescription>
               </div>
               <Button
@@ -142,8 +144,9 @@ export function ResumeUpload({
                 size="sm"
                 onClick={handleRemoveResume}
                 className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                disabled={isParsing}
               >
-                <X className="h-4 w-4" />
+                {isParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
               </Button>
             </div>
           </CardHeader>

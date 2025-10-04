@@ -14,6 +14,25 @@ export interface GenerateInterviewQuestionsInput {
   topics?: string[];
   questionBank?: string[];
   resumeFile?: File;
+  resumeData?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    jobRole?: string;
+    skills: string[];
+    experience: Array<{
+      title: string;
+      company: string;
+      duration: string;
+      description?: string;
+    }>;
+    education: Array<{
+      degree: string;
+      institution: string;
+      year?: string;
+    }>;
+    summary?: string;
+  };
 }
 
 export interface GenerateInterviewQuestionsOutput {
@@ -39,16 +58,33 @@ export async function generateInterviewQuestions(
       ? `\nFocus on the following topics:\n${input.topics.map(topic => `- ${topic}`).join('\n')}`
       : '';
 
-    const resumeText = input.resumeFile 
-      ? `\n\nA resume has been provided for this candidate. Please analyze the resume content and tailor the questions to their specific background, experience, and skills.`
-      : '';
+    // Build comprehensive resume context
+    let resumeContext = '';
+    if (input.resumeData) {
+      const { skills, experience, education, summary, jobRole } = input.resumeData;
+      
+      resumeContext = `\n\nCANDIDATE RESUME INFORMATION:
+Job Role: ${jobRole || input.role}
+Skills: ${skills.join(', ')}
+${summary ? `Professional Summary: ${summary}` : ''}
+
+Experience:
+${experience.map(exp => `- ${exp.title} at ${exp.company} (${exp.duration})${exp.description ? ` - ${exp.description}` : ''}`).join('\n')}
+
+Education:
+${education.map(edu => `- ${edu.degree} from ${edu.institution}${edu.year ? ` (${edu.year})` : ''}`).join('\n')}
+
+IMPORTANT: Generate questions STRICTLY based on the candidate's resume information. Focus on their specific skills, experience, and background. Do not ask generic questions that don't relate to their actual experience.`;
+    } else if (input.resumeFile) {
+      resumeContext = `\n\nA resume has been provided for this candidate. Please analyze the resume content and tailor the questions to their specific background, experience, and skills.`;
+    }
 
     const prompt = `You are an expert interview question generator. Your task is to generate a list of 5 interview questions based on the provided criteria.
 
 Job Role: ${input.role}
-Difficulty: ${input.difficulty}${topicsText}${resumeText}
+Difficulty: ${input.difficulty}${topicsText}${resumeContext}
 
-Please generate 5 insightful and relevant questions for this interview scenario. If a resume is provided, tailor the questions to the candidate's background and experience. Return only the questions, one per line, without numbering or additional text.`;
+Please generate 5 insightful and relevant questions for this interview scenario. If resume information is provided, tailor the questions STRICTLY to the candidate's background and experience. Return only the questions, one per line, without numbering or additional text.`;
 
     let result;
     if (input.resumeFile) {

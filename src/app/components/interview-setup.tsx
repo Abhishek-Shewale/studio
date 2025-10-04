@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -30,6 +31,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { AlertTriangle, Sparkles } from 'lucide-react';
+import { ResumeData } from '@/app/api/parse-resume/route';
 
 const formSchema = z.object({
   role: z.string().min(2, {
@@ -48,12 +50,14 @@ interface InterviewSetupProps {
   onStartInterview: (data: InterviewSetupData) => void;
   isGenerating: boolean;
   hasSpeechSupport: boolean;
+  resumeData?: ResumeData | null;
 }
 
 export function InterviewSetup({
   onStartInterview,
   isGenerating,
   hasSpeechSupport,
+  resumeData,
 }: InterviewSetupProps) {
   const form = useForm<InterviewSetupData>({
     resolver: zodResolver(formSchema),
@@ -64,6 +68,22 @@ export function InterviewSetup({
       questionBank: '',
     },
   });
+
+  // Auto-fill form when resume data is available
+  React.useEffect(() => {
+    if (resumeData) {
+      // Auto-fill role if available
+      if (resumeData.jobRole) {
+        form.setValue('role', resumeData.jobRole);
+      }
+      
+      // Auto-fill topics with skills if available
+      if (resumeData.skills && resumeData.skills.length > 0) {
+        const skillsText = resumeData.skills.join(', ');
+        form.setValue('topics', skillsText);
+      }
+    }
+  }, [resumeData, form]);
 
   return (
     <Card className="w-full shadow-none border-0 md:border md:shadow-lg h-full flex flex-col">

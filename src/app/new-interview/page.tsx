@@ -30,6 +30,8 @@ import {
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { ProgressSpinner } from '@/components/ui/countdown-spinner';
+import { ResumeData } from '@/app/api/parse-resume/route';
+import { inferJobRole } from '@/lib/job-role-inference';
 
 type InterviewState = 'setup' | 'generating' | 'session' | 'scoring' | 'score-display' | 'finished';
 
@@ -48,6 +50,8 @@ export default function NewInterviewPage() {
   const [pendingSessionData, setPendingSessionData] = useState<SessionRecord[] | null>(null);
   const [interviewScore, setInterviewScore] = useState<{score: number, summary: string} | null>(null);
   const [uploadedResume, setUploadedResume] = useState<File | null>(null);
+  const [resumeData, setResumeData] = useState<ResumeData | null>(null);
+  const [isParsingResume, setIsParsingResume] = useState(false);
   const { toast } = useToast();
   const { hasSpeechSupport } = useSpeech({});
   const [isClient, setIsClient] = useState(false);
@@ -84,12 +88,60 @@ export default function NewInterviewPage() {
     return null;
   }
 
-  const handleResumeUpload = (file: File) => {
+  const handleResumeUpload = async (file: File) => {
     setUploadedResume(file);
+    setIsParsingResume(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+      
+      const response = await fetch('/api/parse-resume', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        const parsedData = result.data;
+        
+        // Infer job role if not present in resume
+        if (!parsedData.jobRole && parsedData.skills && parsedData.skills.length > 0) {
+          const inferredRole = inferJobRole(parsedData.skills, parsedData.experience);
+          if (inferredRole) {
+            parsedData.jobRole = inferredRole;
+          }
+        }
+        
+        setResumeData(parsedData);
+        
+        toast({
+          title: 'Resume Parsed Successfully',
+          description: `Extracted information for ${parsedData.jobRole || 'candidate'}. Form has been auto-filled.`,
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Resume Parsing Failed',
+          description: result.error || 'Could not extract information from resume.',
+        });
+      }
+    } catch (error) {
+      console.error('Error parsing resume:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Resume Parsing Error',
+        description: 'Failed to parse resume. Please try again.',
+      });
+    } finally {
+      setIsParsingResume(false);
+    }
   };
 
   const handleResumeRemove = () => {
     setUploadedResume(null);
+    setResumeData(null);
   };
 
   const handleStartInterview = async (data: InterviewSetupData) => {
@@ -104,7 +156,8 @@ export default function NewInterviewPage() {
           ...data,
           topics,
           questionBank,
-          resumeFile: uploadedResume || undefined
+          resumeFile: uploadedResume || undefined,
+          resumeData: resumeData || undefined
         });
         
       if (result && result.questions && result.questions.length > 0) {
@@ -231,6 +284,7 @@ export default function NewInterviewPage() {
                 onStartInterview={handleStartInterview}
                 isGenerating={interviewState === 'generating'}
                 hasSpeechSupport={isClient ? hasSpeechSupport : true}
+                resumeData={resumeData}
               />
             </div>
             <div className="order-1 md:order-2">
@@ -238,6 +292,7 @@ export default function NewInterviewPage() {
                 onResumeUpload={handleResumeUpload}
                 onResumeRemove={handleResumeRemove}
                 uploadedResume={uploadedResume}
+                isParsing={isParsingResume}
               />
             </div>
           </div>
@@ -249,6 +304,7 @@ export default function NewInterviewPage() {
               settings={interviewData.settings}
               questions={interviewData.questions}
               onFinish={handleFinishInterview}
+              resumeData={resumeData}
             />
           );
         }

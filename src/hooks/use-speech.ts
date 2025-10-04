@@ -148,7 +148,12 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
         recognitionRef.current.start();
       } catch (e) {
         console.error('Could not start recognition', e);
-        setIsListening(false);
+        // If recognition is already started, just set the state
+        if (e instanceof Error && e.message.includes('already started')) {
+          setIsListening(true);
+        } else {
+          setIsListening(false);
+        }
       }
     }
   }, [isListening]);
@@ -167,7 +172,12 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
 
   const speak = useCallback(
     (text: string, onEnd?: () => void) => {
-      if (!hasSpeechSupport || isSpeaking) return;
+      if (!hasSpeechSupport) return;
+
+      // Cancel any ongoing speech before starting new one
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+      }
 
       console.log('=== SPEAKING ===');
       console.log('Text:', text);
@@ -189,6 +199,8 @@ export const useSpeech = ({ onListenResult }: UseSpeechProps) => {
       utterance.onerror = (event) => {
         console.error('Speech synthesis error:', event.error);
         setIsSpeaking(false);
+        // Call onEnd even on error to prevent hanging
+        onEnd?.();
       };
 
       window.speechSynthesis.speak(utterance);

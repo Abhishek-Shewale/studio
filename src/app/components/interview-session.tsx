@@ -30,16 +30,60 @@ interface InterviewSessionProps {
   settings: InterviewSetupData;
   questions: string[];
   onFinish: (sessionData: any[]) => void;
+  resumeData?: any;
 }
 
-// Introductory questions that will be asked at the start of every interview
-const INTRODUCTORY_QUESTIONS = [
-  "Please introduce yourself and tell us a bit about your background.",
-  "Tell us about a recent project or assignment you worked on.",
-  "How do you usually approach learning a new technology or tool?",
-  "What motivates you in your career, and where do you see yourself in the next few years?",
-  "What do you enjoy most about working in this field?"
-];
+// Generate dynamic introductory questions based on resume data
+const generateIntroductoryQuestions = (resumeData?: any): string[] => {
+  if (!resumeData) {
+    // Default questions if no resume data
+    return [
+      "Please introduce yourself and tell us a bit about your background.",
+      "Tell us about a recent project or assignment you worked on.",
+      "How do you usually approach learning a new technology or tool?",
+      "What motivates you in your career, and where do you see yourself in the next few years?",
+      "What do you enjoy most about working in this field?"
+    ];
+  }
+
+  const { skills, experience, summary, jobRole } = resumeData;
+  const questions: string[] = [];
+
+  // Always start with introduction
+  questions.push("Please introduce yourself and tell us a bit about your background.");
+
+  // Question based on recent experience
+  if (experience && experience.length > 0) {
+    const recentJob = experience[0];
+    questions.push(`Tell us about your role as ${recentJob.title} at ${recentJob.company}. What were your main responsibilities and achievements?`);
+  } else {
+    questions.push("Tell us about a recent project or assignment you worked on.");
+  }
+
+  // Question based on skills
+  if (skills && skills.length > 0) {
+    const primarySkills = skills.slice(0, 3).join(', ');
+    questions.push(`I see you have experience with ${primarySkills}. Can you walk me through a project where you used these technologies?`);
+  } else {
+    questions.push("How do you usually approach learning a new technology or tool?");
+  }
+
+  // Question based on job role
+  if (jobRole) {
+    questions.push(`What drew you to the ${jobRole} field, and what aspects of this role excite you most?`);
+  } else {
+    questions.push("What motivates you in your career, and where do you see yourself in the next few years?");
+  }
+
+  // Question based on summary or general
+  if (summary) {
+    questions.push("Based on your experience, what do you think are the most important qualities for success in your field?");
+  } else {
+    questions.push("What do you enjoy most about working in this field?");
+  }
+
+  return questions;
+};
 
 type SessionStatus =
   | 'IDLE'
@@ -64,6 +108,7 @@ export function InterviewSession({
   settings,
   questions,
   onFinish,
+  resumeData,
 }: InterviewSessionProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [status, setStatus] = useState<SessionStatus>('IDLE');
@@ -74,6 +119,7 @@ export function InterviewSession({
   const [userAnswer, setUserAnswer] = useState('');
   const [sessionHistory, setSessionHistory] = useState<SessionRecord[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hasAskedQuestionRef = useRef(false);
   
   // Auto-resize textarea function
   const autoResizeTextarea = useCallback(() => {
@@ -88,8 +134,10 @@ export function InterviewSession({
     }
   }, []);
   
+  // Generate dynamic introductory questions based on resume data
+  const introductoryQuestions = generateIntroductoryQuestions(resumeData);
   // Combine introductory questions with technical questions
-  const allQuestions = [...INTRODUCTORY_QUESTIONS, ...questions];
+  const allQuestions = [...introductoryQuestions, ...questions];
 
   const {speak, startListening, stopListening, cancelSpeaking, isListening, isSpeaking} =
     useSpeech({
@@ -159,6 +207,7 @@ export function InterviewSession({
     if (currentQuestionIndex < allQuestions.length - 1) {
       // Stop any ongoing speech recognition and clear the input
       stopListening();
+      cancelSpeaking(); // Also cancel any ongoing speech
       setUserAnswer('');
       
       // Clear previous feedback
@@ -180,14 +229,19 @@ export function InterviewSession({
         }]);
       }
       
-      setCurrentQuestionIndex(prev => prev + 1);
+      // Add a small delay to ensure speech recognition is properly stopped
+      setTimeout(() => {
+        setCurrentQuestionIndex(prev => prev + 1);
+        hasAskedQuestionRef.current = false;
+      }, 200);
     } else {
       speak('That was the last question. The interview is now complete. Great job!', () => onFinish(sessionHistory));
     }
   };
   
   useEffect(() => {
-    if (currentQuestion) {
+    if (currentQuestion && !hasAskedQuestionRef.current) {
+      hasAskedQuestionRef.current = true;
       setMessages([{ sender: 'ai', text: currentQuestion }]);
       setUserAnswer('');
       // Clear previous feedback when new question starts
@@ -204,11 +258,14 @@ export function InterviewSession({
         setStatus('IDLE');
         // Automatically start listening after AI finishes asking the question
         setUserAnswer('');
-        startListening();
-        setStatus('LISTENING');
+        // Add a small delay to ensure speech recognition is properly stopped
+        setTimeout(() => {
+          startListening();
+          setStatus('LISTENING');
+        }, 100);
       });
     }
-  }, [status, speak, startListening]);
+  }, [status, currentQuestion, speak, startListening]);
 
 
   const handleListen = () => {
@@ -325,12 +382,12 @@ export function InterviewSession({
            <div className="relative">
             <Textarea
               ref={textareaRef}
-              placeholder={status === 'ASKING' ? "Please wait for the question to finish..." : "Type your answer here or speak (mic is active)..."}
+              placeholder={status === 'ASKING' || isSpeaking ? "Please wait for the question to finish..." : "Type your answer here or speak (mic is active)..."}
               value={userAnswer}
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
               className="pr-24 min-h-[60px] max-h-[200px] resize-none overflow-y-auto"
-              disabled={status === 'ASKING' || status === 'PROCESSING'}
+              disabled={status === 'ASKING' || status === 'PROCESSING' || isSpeaking}
             />
             <div className="absolute right-2 bottom-2 flex items-center gap-1">
               <Button 
@@ -338,8 +395,8 @@ export function InterviewSession({
                 size="icon" 
                 onClick={handleListen} 
                 className={isListening ? 'text-red-500' : 'text-muted-foreground'}
-                disabled={status === 'ASKING' || status === 'PROCESSING'}
-                title={status === 'ASKING' ? 'Wait for question to finish' : isListening ? 'Click to stop recording' : 'Click to start recording'}
+                disabled={status === 'ASKING' || status === 'PROCESSING' || isSpeaking}
+                title={status === 'ASKING' || isSpeaking ? 'Wait for question to finish' : isListening ? 'Click to stop recording' : 'Click to start recording'}
               >
                 {isListening ? (
                   <Mic className="h-5 w-5" />
@@ -347,7 +404,7 @@ export function InterviewSession({
                   <MicOff className="h-5 w-5" />
                 )}
               </Button>
-              <Button size="sm" onClick={() => handleSubmit(userAnswer)} disabled={!userAnswer || status === 'ASKING'}>
+              <Button size="sm" onClick={() => handleSubmit(userAnswer)} disabled={!userAnswer || status === 'ASKING' || isSpeaking}>
                 <Send className="h-4 w-4 mr-2" /> Send
               </Button>
             </div>
@@ -427,7 +484,7 @@ export function InterviewSession({
           </CardContent>
         </Card>
         <div className="flex mt-4 gap-4 flex-shrink-0">
-          <Button onClick={nextQuestion} disabled={status === 'PROCESSING' || isLastQuestion} size="sm">Next Question</Button>
+          <Button onClick={nextQuestion} disabled={status === 'PROCESSING' || isSpeaking || isLastQuestion} size="sm">Next Question</Button>
           <Button variant="destructive" onClick={handleEndInterview} size="sm">End Mock Interview</Button>
         </div>
       </div>

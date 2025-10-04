@@ -226,16 +226,20 @@ export default function NewInterviewPage() {
       case 'generating':
         return (
           <div className="grid md:grid-cols-2 gap-6 w-full max-w-6xl mx-auto h-full">
-            <InterviewSetup
-              onStartInterview={handleStartInterview}
-              isGenerating={interviewState === 'generating'}
-              hasSpeechSupport={isClient ? hasSpeechSupport : true}
-            />
-            <ResumeUpload
-              onResumeUpload={handleResumeUpload}
-              onResumeRemove={handleResumeRemove}
-              uploadedResume={uploadedResume}
-            />
+            <div className="order-2 md:order-1">
+              <InterviewSetup
+                onStartInterview={handleStartInterview}
+                isGenerating={interviewState === 'generating'}
+                hasSpeechSupport={isClient ? hasSpeechSupport : true}
+              />
+            </div>
+            <div className="order-1 md:order-2">
+              <ResumeUpload
+                onResumeUpload={handleResumeUpload}
+                onResumeRemove={handleResumeRemove}
+                uploadedResume={uploadedResume}
+              />
+            </div>
           </div>
         );
       case 'session':

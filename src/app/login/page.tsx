@@ -46,13 +46,23 @@ export default function LoginPage() {
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     
+    // Add scopes to ensure we get profile information including photo
+    provider.addScope('profile');
+    provider.addScope('email');
+    
     // Force account selection and clear any cached credentials
     provider.setCustomParameters({
       prompt: 'select_account'
     });
     
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      console.log('Sign-in successful:', {
+        user: result.user,
+        photoURL: result.user.photoURL,
+        displayName: result.user.displayName,
+        email: result.user.email
+      });
     } catch (error) {
       console.error('Error during sign-in:', error);
     }

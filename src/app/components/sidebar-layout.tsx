@@ -54,6 +54,20 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  // Debug user data
+  React.useEffect(() => {
+    if (user) {
+      console.log('User data:', {
+        uid: user.uid,
+        displayName: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        emailVerified: user.emailVerified,
+        providerData: user.providerData
+      });
+    }
+  }, [user]);
+
   const handleLogout = () => {
     setIsLoggingOut(true);
     
@@ -134,10 +148,19 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3 w-full p-2">
             <Avatar className="h-8 w-8 flex-shrink-0">
               {user?.photoURL ? (
-                <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>
-              ) : (
-                <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
-              )}
+                <AvatarImage 
+                  src={user.photoURL} 
+                  alt={user.displayName || 'User'}
+                  onError={(e) => {
+                    console.log('Avatar image failed to load:', user.photoURL);
+                    // Hide the image and show fallback
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : null}
+              <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
+                {user?.displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+              </AvatarFallback>
             </Avatar>
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <span className="text-sm font-medium truncate">

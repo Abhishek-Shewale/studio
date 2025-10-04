@@ -41,7 +41,7 @@ export function ResumeUpload({
       toast({
         variant: 'destructive',
         title: 'Invalid File Type',
-        description: 'Please upload a PDF file. For Word documents, please convert to PDF first.',
+        description: 'Only PDF files are supported. Word documents (.doc, .docx) cannot be processed.',
       });
     }
   };
@@ -84,13 +84,13 @@ export function ResumeUpload({
       {!uploadedResume ? (
         /* Upload Section */
         <Card className="shadow-none border-0 md:border md:shadow-lg h-full flex flex-col">
-          <CardHeader className="pb-2 pt-4">
-            <CardTitle className="text-lg font-bold">Upload Resume</CardTitle>
+          <CardHeader className="pb-1 pt-4">
+            <CardTitle className="text-lg font-bold">Upload Resume (PDF Only)</CardTitle>
             <CardDescription className="text-sm">
-              Upload your resume to get personalized interview questions.
+              Upload your resume in PDF format to get personalized interview questions.
             </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-2 flex-1 flex items-center justify-center">
+          </CardHeader> 
+          <CardContent className="pt-0 flex-1 flex items-center justify-center">
             <div
               className={cn(
                 'border-2 border-dashed rounded-lg p-6 text-center transition-colors w-full',
@@ -104,14 +104,14 @@ export function ResumeUpload({
             >
               <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground mb-2">
-                Drag and drop your resume here, or click to browse
+                Drag and drop your PDF resume here, or click to browse
               </p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
               >
-                Choose File
+                Browse File
               </Button>
               <input
                 ref={fileInputRef}
@@ -121,7 +121,7 @@ export function ResumeUpload({
                 className="hidden"
               />
               <p className="text-xs text-muted-foreground mt-2">
-                Supports PDF files (convert Word docs to PDF first)
+                PDF files only*
               </p>
             </div>
           </CardContent>

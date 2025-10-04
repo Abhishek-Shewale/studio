@@ -1,6 +1,6 @@
 # Vercel Deployment Guide
 
-This guide will help you deploy your ProPrep AI mock interview application to Vercel.
+This guide will help you deploy your Interviewbabu mock interview application to Vercel.
 
 ## Prerequisites
 

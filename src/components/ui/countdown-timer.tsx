@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Clock, AlertTriangle, Pause, Play } from 'lucide-react';
+import { Clock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 
 interface CountdownTimerProps {
   duration: number; // in minutes
@@ -14,11 +13,10 @@ interface CountdownTimerProps {
 export function CountdownTimer({ duration, onTimeUp, className }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState(duration * 60); // convert to seconds
   const [isRunning, setIsRunning] = useState(true);
-  const [isPaused, setIsPaused] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (isRunning && !isPaused && timeLeft > 0) {
+    if (isRunning && timeLeft > 0) {
       intervalRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -40,11 +38,7 @@ export function CountdownTimer({ duration, onTimeUp, className }: CountdownTimer
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, isPaused, timeLeft, onTimeUp]);
-
-  const togglePause = () => {
-    setIsPaused(!isPaused);
-  };
+  }, [isRunning, timeLeft, onTimeUp]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -87,22 +81,9 @@ export function CountdownTimer({ duration, onTimeUp, className }: CountdownTimer
           )}
         </div>
         <span className="text-xs text-muted-foreground">
-          {isPaused ? 'Timer paused' : isLowTime ? 'Time running low!' : 'Interview in progress'}
+          {isLowTime ? 'Time running low!' : 'Interview in progress'}
         </span>
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={togglePause}
-        disabled={!isRunning || timeLeft === 0}
-        className="h-8 w-8 p-0 hover:bg-background/20"
-      >
-        {isPaused ? (
-          <Play className="h-4 w-4" />
-        ) : (
-          <Pause className="h-4 w-4" />
-        )}
-      </Button>
     </div>
   );
 }

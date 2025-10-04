@@ -92,6 +92,9 @@ export default function NewInterviewPage() {
     setUploadedResume(file);
     setIsParsingResume(true);
     
+    // Clear previous resume data while parsing
+    setResumeData(null);
+    
     try {
       const formData = new FormData();
       formData.append('resume', file);
@@ -285,6 +288,7 @@ export default function NewInterviewPage() {
                 isGenerating={interviewState === 'generating'}
                 hasSpeechSupport={isClient ? hasSpeechSupport : true}
                 resumeData={resumeData}
+                isParsingResume={isParsingResume}
               />
             </div>
             <div className="order-1 md:order-2">

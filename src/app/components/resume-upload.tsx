@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -74,12 +74,41 @@ export function ResumeUpload({
     }
   };
 
-  const handleRemoveResume = () => {
+  const handleRemoveResume = useCallback(() => {
     onResumeRemove();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
+  }, [onResumeRemove]);
+
+  // Memoize the iframe URL to prevent unnecessary re-renders
+  const iframeUrl = useMemo(() => {
+    if (!uploadedResume) return null;
+    return `${URL.createObjectURL(uploadedResume)}#toolbar=0&navpanes=0&scrollbar=0&view=FitV&zoom=FitV&pagemode=none&disableprint=1&disablesave=1`;
+  }, [uploadedResume]);
+
+  // Memoize the iframe onLoad handler
+  const handleIframeLoad = useCallback((e: React.SyntheticEvent<HTMLIFrameElement>) => {
+    const iframe = e.target as HTMLIFrameElement;
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.backgroundColor = 'white';
+    iframe.style.overflow = 'hidden';
+    
+    // Try to access iframe content and set background
+    try {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.body.style.backgroundColor = 'white';
+        iframeDoc.body.style.overflow = 'hidden';
+        iframeDoc.documentElement.style.backgroundColor = 'white';
+        iframeDoc.documentElement.style.overflow = 'hidden';
+      }
+    } catch (error) {
+      // Cross-origin restrictions might prevent this
+      console.log('Cannot access iframe content due to CORS');
+    }
+  }, []);
 
   return (
     <div className={cn('h-full', className)}>
@@ -136,7 +165,14 @@ export function ResumeUpload({
               <div>
                 <CardTitle className="text-lg font-bold">Resume Preview</CardTitle>
                 <CardDescription className="text-sm">
-                  {isParsing ? 'AI is extracting information from your resume...' : 'Preview of your uploaded resume'}
+                  {isParsing ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      AI is extracting information from your resume...
+                    </span>
+                  ) : (
+                    'Preview of your uploaded resume'
+                  )}
                 </CardDescription>
               </div>
               <Button
@@ -152,40 +188,29 @@ export function ResumeUpload({
           </CardHeader>
           <CardContent className="flex-1 p-0 pt-2">
             <div className="h-full overflow-hidden bg-white relative">
-              <iframe
-                src={`${URL.createObjectURL(uploadedResume)}#toolbar=0&navpanes=0&scrollbar=0&view=FitV&zoom=FitV&pagemode=none&disableprint=1&disablesave=1`}
-                className="w-full h-full border-0 rounded-lg"
-                title="Resume Preview"
-                style={{ 
-                  backgroundColor: 'white',
-                  transform: 'scale(1)',
-                  transformOrigin: 'top left',
-                  overflow: 'hidden'
-                }}
-                scrolling="no"
-                onLoad={(e) => {
-                  // Force fit to page after load and set white background
-                  const iframe = e.target as HTMLIFrameElement;
-                  iframe.style.width = '100%';
-                  iframe.style.height = '100%';
-                  iframe.style.backgroundColor = 'white';
-                  iframe.style.overflow = 'hidden';
-                  
-                  // Try to access iframe content and set background
-                  try {
-                    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                    if (iframeDoc) {
-                      iframeDoc.body.style.backgroundColor = 'white';
-                      iframeDoc.body.style.overflow = 'hidden';
-                      iframeDoc.documentElement.style.backgroundColor = 'white';
-                      iframeDoc.documentElement.style.overflow = 'hidden';
-                    }
-                  } catch (error) {
-                    // Cross-origin restrictions might prevent this
-                    console.log('Cannot access iframe content due to CORS');
-                  }
-                }}
-              />
+              {iframeUrl && (
+                <iframe
+                  src={iframeUrl}
+                  className="w-full h-full border-0 rounded-lg"
+                  title="Resume Preview"
+                  style={{ 
+                    backgroundColor: 'white',
+                    transform: 'scale(1)',
+                    transformOrigin: 'top left',
+                    overflow: 'hidden'
+                  }}
+                  scrolling="no"
+                  onLoad={handleIframeLoad}
+                />
+              )}
+              {isParsing && (
+                <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Parsing resume...</p>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

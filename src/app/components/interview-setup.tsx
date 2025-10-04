@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -51,6 +51,7 @@ interface InterviewSetupProps {
   isGenerating: boolean;
   hasSpeechSupport: boolean;
   resumeData?: ResumeData | null;
+  isParsingResume?: boolean;
 }
 
 export function InterviewSetup({
@@ -58,6 +59,7 @@ export function InterviewSetup({
   isGenerating,
   hasSpeechSupport,
   resumeData,
+  isParsingResume = false,
 }: InterviewSetupProps) {
   const form = useForm<InterviewSetupData>({
     resolver: zodResolver(formSchema),
@@ -69,21 +71,29 @@ export function InterviewSetup({
     },
   });
 
+  // Memoize the auto-fill data to prevent unnecessary re-renders
+  const autoFillData = useMemo(() => {
+    if (!resumeData) return null;
+    
+    return {
+      role: resumeData.jobRole || '',
+      topics: resumeData.skills && resumeData.skills.length > 0 
+        ? resumeData.skills.join(', ') 
+        : ''
+    };
+  }, [resumeData]);
+
   // Auto-fill form when resume data is available
   React.useEffect(() => {
-    if (resumeData) {
-      // Auto-fill role if available
-      if (resumeData.jobRole) {
-        form.setValue('role', resumeData.jobRole);
+    if (autoFillData) {
+      if (autoFillData.role) {
+        form.setValue('role', autoFillData.role);
       }
-      
-      // Auto-fill topics with skills if available
-      if (resumeData.skills && resumeData.skills.length > 0) {
-        const skillsText = resumeData.skills.join(', ');
-        form.setValue('topics', skillsText);
+      if (autoFillData.topics) {
+        form.setValue('topics', autoFillData.topics);
       }
     }
-  }, [resumeData, form]);
+  }, [autoFillData, form]);
 
   return (
     <Card className="w-full shadow-none border-0 md:border md:shadow-lg h-full flex flex-col">
@@ -105,6 +115,22 @@ export function InterviewSetup({
             </p>
           </div>
         )}
+        {isParsingResume && (
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-2 text-xs text-blue-700">
+            <Sparkles className="h-4 w-4 flex-shrink-0 animate-spin" />
+            <p>
+              AI is analyzing your resume and will auto-fill the form. Please wait...
+            </p>
+          </div>
+        )}
+        {resumeData && !isParsingResume && (
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-2 text-xs text-green-700">
+            <Sparkles className="h-4 w-4 flex-shrink-0" />
+            <p>
+              Resume parsed successfully! Form has been auto-filled with your information.
+            </p>
+          </div>
+        )}
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onStartInterview)}
@@ -121,7 +147,7 @@ export function InterviewSetup({
                       <Input
                         placeholder="e.g., Software Engineer"
                         {...field}
-                        disabled={isGenerating}
+                        disabled={isGenerating || isParsingResume}
                         className="h-8"
                       />
                     </FormControl>
@@ -173,7 +199,7 @@ export function InterviewSetup({
                       <Input
                         placeholder="e.g., React, System Design"
                         {...field}
-                        disabled={isGenerating}
+                        disabled={isGenerating || isParsingResume}
                         className="h-8"
                       />
                     </FormControl>
@@ -196,7 +222,7 @@ export function InterviewSetup({
                         placeholder="Paste your custom questions here, one per line."
                         className="min-h-[60px] flex-1 resize-none"
                         {...field}
-                        disabled={isGenerating}
+                        disabled={isGenerating || isParsingResume}
                       />
                     </FormControl>
                     <FormDescription className="text-xs">
@@ -211,13 +237,18 @@ export function InterviewSetup({
             <Button
               type="submit"
               className="w-full flex-shrink-0 h-9"
-              disabled={isGenerating || !hasSpeechSupport}
+              disabled={isGenerating || !hasSpeechSupport || isParsingResume}
               size="sm"
             >
               {isGenerating ? (
                 <>
                   <Sparkles className="mr-2 h-4 w-4 animate-spin" />
                   Starting Mock Interview...
+                </>
+              ) : isParsingResume ? (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                  Parsing Resume...
                 </>
               ) : (
                 'Start Mock Interview'

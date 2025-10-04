@@ -46,47 +46,55 @@ export async function POST(request: NextRequest): Promise<NextResponse<ParsedRes
       }, { status: 400 });
     }
 
-    // Initialize Gemini
+    // Initialize Gemini with optimized settings
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '');
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        maxOutputTokens: 1000, // Limit output for faster response
+        temperature: 0.1, // Lower temperature for more consistent, faster responses
+      }
+    });
 
     // Convert file to base64
     const arrayBuffer = await file.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString('base64');
 
-    const prompt = `Analyze this resume and extract the following information in a structured JSON format. Be precise and only include information that is clearly stated in the resume.
+    const prompt = `Extract resume data as JSON. Be concise and fast.
 
-Return the data in this exact JSON structure:
+Return ONLY this JSON structure:
 {
   "name": "Full name if found",
-  "email": "Email address if found",
-  "phone": "Phone number if found",
-  "jobRole": "Most recent job title/role if found",
+  "email": "Email if found", 
+  "phone": "Phone if found",
+  "jobRole": "Most recent job title",
   "skills": ["skill1", "skill2", "skill3"],
   "experience": [
     {
       "title": "Job title",
-      "company": "Company name",
+      "company": "Company name", 
       "duration": "Duration/date range",
-      "description": "Brief description if available"
+      "description": "Brief description"
     }
   ],
   "education": [
     {
       "degree": "Degree name",
       "institution": "Institution name",
-      "year": "Graduation year if available"
+      "year": "Graduation year"
     }
   ],
-  "summary": "Professional summary or objective if found"
+  "summary": "Professional summary if found"
 }
 
-Important guidelines:
-- Only extract information that is explicitly mentioned in the resume
-- For skills, include technical skills, programming languages, frameworks, tools, etc.
-- For experience, focus on the most recent and relevant positions
-- If a field is not found, use null or empty array as appropriate
-- Return ONLY the JSON object, no additional text or formatting`;
+Rules:
+- Extract only explicitly stated information
+- Focus on recent experience (max 3 positions)
+- Include technical skills, languages, frameworks, tools
+- Be specific with technology names (e.g., "React", "Python", "AWS", not generic terms)
+- Use null/empty arrays for missing data
+- Return ONLY the JSON, no other text
+- Ensure all extracted data is complete and usable`;
 
     const result = await model.generateContent([
       prompt,

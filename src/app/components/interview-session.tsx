@@ -333,7 +333,22 @@ export function InterviewSession({
               }}
             />
           </div>
-          <p className="text-muted-foreground text-sm">Difficulty: {settings.difficulty}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-muted-foreground text-sm">Difficulty: {settings.difficulty}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                Question {currentQuestionIndex + 1} of {allQuestions.length}
+              </span>
+              <div className="w-20 h-2 bg-secondary rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all duration-300 ease-in-out"
+                  style={{ 
+                    width: `${((currentQuestionIndex + 1) / allQuestions.length) * 100}%` 
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         </header>
 
         <ScrollArea className="flex-1 pr-4 -mr-4 mb-4">
@@ -357,6 +372,7 @@ export function InterviewSession({
                       : 'bg-primary text-primary-foreground max-w-sm'
                   }`}
                 >
+                  
                   <div className="flex items-center gap-2">
                     <p>{message.text}</p>
                     {message.sender === 'ai' && isSpeaking && (
@@ -484,7 +500,9 @@ export function InterviewSession({
           </CardContent>
         </Card>
         <div className="flex mt-4 gap-4 flex-shrink-0">
-          <Button onClick={nextQuestion} disabled={status === 'PROCESSING' || isSpeaking || isLastQuestion} size="sm">Next Question</Button>
+          <Button onClick={nextQuestion} disabled={status === 'PROCESSING' || isSpeaking || isLastQuestion} size="sm">
+            {isLastQuestion ? 'Complete Interview' : `Next Question`}
+          </Button>
           <Button variant="destructive" onClick={handleEndInterview} size="sm">End Mock Interview</Button>
         </div>
       </div>

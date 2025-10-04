@@ -37,7 +37,7 @@ export function ResumeUpload({
       onResumeUpload(file);
       toast({
         title: 'PDF Uploaded',
-        description: 'PDF file uploaded successfully. AI is extracting the content...',
+        description: 'PDF file uploaded successfully. InterviewBabu is extracting the content...',
       });
     } else {
       toast({
@@ -116,9 +116,9 @@ export function ResumeUpload({
         /* Upload Section */
         <Card className="shadow-none border-0 md:border md:shadow-lg h-full flex flex-col">
           <CardHeader className="pb-1 pt-4">
-            <CardTitle className="text-lg font-bold">Upload Resume (PDF Only)</CardTitle>
+            <CardTitle className="text-lg font-bold">Upload Resume (PDF Only) - Optional</CardTitle>
             <CardDescription className="text-sm">
-              Upload your resume in PDF format to get personalized interview questions.
+              Upload your resume in PDF format to get personalized interview questions. This step is optional.
             </CardDescription>
           </CardHeader> 
           <CardContent className="pt-0 flex-1 flex items-center justify-center">
@@ -168,7 +168,7 @@ export function ResumeUpload({
                   {isParsing ? (
                     <span className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      AI is extracting information from your resume...
+                      InterviewBabu is extracting information from your resume...
                     </span>
                   ) : (
                     'Preview of your uploaded resume'

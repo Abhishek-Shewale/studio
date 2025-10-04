@@ -119,7 +119,7 @@ export function InterviewSetup({
           <div className="mb-3 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-2 text-xs text-blue-700">
             <Sparkles className="h-4 w-4 flex-shrink-0 animate-spin" />
             <p>
-              AI is analyzing your resume and will auto-fill the form. Please wait...
+              InterviewBabu is analyzing your resume and will auto-fill the form. Please wait...
             </p>
           </div>
         )}
@@ -226,7 +226,7 @@ export function InterviewSetup({
                       />
                     </FormControl>
                     <FormDescription className="text-xs">
-                      Provide your own questions for the AI to use.
+                      Provide your own questions for InterviewBabu to use.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

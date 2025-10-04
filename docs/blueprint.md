@@ -1,4 +1,4 @@
-# **App Name**: VoiceAssess AI
+# **App Name**: InterviewBabu
 
 ## Core Features:
 

@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'ProPrep AI',
+  title: 'Interviewbabu AI',
   description: 'AI-powered mock interviews with voice feedback.',
 };
 

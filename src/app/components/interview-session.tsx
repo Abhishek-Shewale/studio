@@ -94,7 +94,7 @@ type SessionStatus =
   | 'GIVING_FEEDBACK';
 
 type Message = {
-  sender: 'user' | 'ai';
+  sender: 'user' | 'InterviewBabu';
   text: string;
 };
 
@@ -243,7 +243,7 @@ export function InterviewSession({
   useEffect(() => {
     if (currentQuestion && !hasAskedQuestionRef.current) {
       hasAskedQuestionRef.current = true;
-      setMessages([{ sender: 'ai', text: currentQuestion }]);
+      setMessages([{ sender: 'InterviewBabu', text: currentQuestion }]);
       setUserAnswer('');
       // Clear previous feedback when new question starts
       setGoodPoints([]);
@@ -370,14 +370,14 @@ export function InterviewSession({
                   message.sender === 'user' ? 'justify-end' : ''
                 }`}
               >
-                {message.sender === 'ai' && (
+                {message.sender === 'InterviewBabu' && (
                   <Avatar>
                     <AvatarFallback><Bot /></AvatarFallback>
                   </Avatar>
                 )}
                 <div
                   className={`rounded-lg p-3 ${
-                    message.sender === 'ai'
+                    message.sender === 'InterviewBabu'
                       ? 'bg-secondary max-w-2xl'
                       : 'bg-primary text-primary-foreground max-w-sm'
                   }`}
@@ -385,7 +385,7 @@ export function InterviewSession({
                   
                   <div className="flex items-center gap-2">
                     <p>{message.text}</p>
-                    {message.sender === 'ai' && isSpeaking && (
+                    {message.sender === 'InterviewBabu' && isSpeaking && (
                       <Volume2 className="h-4 w-4 animate-pulse text-primary" />
                     )}
                   </div>

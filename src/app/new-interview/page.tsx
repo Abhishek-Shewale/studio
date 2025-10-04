@@ -320,7 +320,7 @@ export default function NewInterviewPage() {
             <CardHeader>
               <CardTitle className="text-3xl font-bold">Analyzing your performance...</CardTitle>
               <CardDescription className="pt-2">
-                Our AI is calculating your score and generating a summary. Please wait a moment.
+                Our Interviewbabu AI is calculating your score and generating a summary. Please wait a moment.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
@@ -359,12 +359,12 @@ export default function NewInterviewPage() {
               </div>
               
               {/* Summary */}
-              <div className="text-left bg-secondary/50 rounded-lg p-4">
+              {/* <div className="text-left bg-secondary/50 rounded-lg p-4">
                 <h3 className="font-semibold mb-2 text-center">Performance Summary</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {interviewScore.summary}
                 </p>
-              </div>
+              </div> */}
               
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3">

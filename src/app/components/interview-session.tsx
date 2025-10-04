@@ -120,6 +120,7 @@ export function InterviewSession({
   const [sessionHistory, setSessionHistory] = useState<SessionRecord[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasAskedQuestionRef = useRef(false);
+  const [showListeningIndicator, setShowListeningIndicator] = useState(false);
   
   // Auto-resize textarea function
   const autoResizeTextarea = useCallback(() => {
@@ -262,10 +263,19 @@ export function InterviewSession({
         setTimeout(() => {
           startListening();
           setStatus('LISTENING');
+          // Show listening indicator after 5 seconds
+          setTimeout(() => {
+            setShowListeningIndicator(true);
+          }, 5000);
         }, 100);
       });
     }
   }, [status, currentQuestion, speak, startListening]);
+
+  // Reset listening indicator when question changes
+  useEffect(() => {
+    setShowListeningIndicator(false);
+  }, [currentQuestion]);
 
 
   const handleListen = () => {
@@ -382,7 +392,7 @@ export function InterviewSession({
                 </div>
               </div>
             ))}
-             {isListening && (
+             {isListening && showListeningIndicator && status !== 'ASKING' && status !== 'PROCESSING' && !isSpeaking && (
               <div className="flex justify-end">
                 <div className="rounded-lg p-3 max-w-sm bg-secondary animate-pulse">
                   <p className="flex items-center gap-2 text-muted-foreground">

@@ -77,8 +77,8 @@ export async function getPastInterviews(
     
     // Sort by date in descending order on the client side
     interviews.sort((a, b) => {
-      const dateA = a.date instanceof Date ? a.date : new Date(a.date);
-      const dateB = b.date instanceof Date ? b.date : new Date(b.date);
+      const dateA = a.date instanceof Date ? a.date : (a.date instanceof Timestamp ? a.date.toDate() : new Date());
+      const dateB = b.date instanceof Date ? b.date : (b.date instanceof Timestamp ? b.date.toDate() : new Date());
       return dateB.getTime() - dateA.getTime();
     });
     
